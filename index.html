@@ -132,6 +132,9 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 .rangeRow .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line);margin-right:4px;vertical-align:-1px}
 .legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:.82rem;color:var(--muted);margin-top:6px}
 .legend span{display:inline-flex;align-items:center;gap:5px}
+.mk{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px solid var(--muted)}
+.mk.fill{background:var(--muted)}
+.mk.dash{border-style:dashed}
 .legend i{width:14px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
 .check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.95rem;margin:0 0 10px;min-height:46px}
 .check input{width:22px;height:22px;min-height:0;flex:none;accent-color:var(--accent)}
@@ -283,6 +286,10 @@ fieldset.period legend{font-weight:700;padding:0 6px}
         <div><label for="sMax" id="sMaxLabel">Daily max (24 h)</label><input id="sMax" type="number" inputmode="decimal" step="any" min="0" placeholder="No limit"></div>
         <div><label for="sMaxPer" id="sMaxPerLabel">Most per dose</label><input id="sMaxPer" type="number" inputmode="decimal" step="any" min="0" placeholder="No limit"></div>
       </div>
+      <div class="row">
+        <div><label for="sMinGap">Minimum hours between doses</label><input id="sMinGap" type="number" inputmode="decimal" step="any" min="0" placeholder="None"></div>
+      </div>
+      <p class="hint">Used to keep late-dose adjustments and as-needed doses safely spaced.</p>
     </fieldset>
 
     <p class="hint" id="sGap"></p>
@@ -295,14 +302,33 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 
   <details class="card" id="chartCard" open>
     <summary><h2 id="chartH">Dose Log</h2></summary>
-    <div class="seg" role="group" aria-label="Time range">
-      <button data-range="1">24 h</button>
-      <button data-range="7" aria-pressed="true">7 days</button>
-      <button data-range="30">30 days</button>
-      <button data-range="all">All</button>
+    <div class="full">
+      <label for="logRange">Showing</label>
+      <select id="logRange">
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="2d">Yesterday and today</option>
+        <option value="1">Last 24 hours</option>
+        <option value="7">Last 7 days</option>
+        <option value="30">Last 30 days</option>
+        <option value="all">All</option>
+        <option value="custom">Custom range…</option>
+      </select>
+    </div>
+    <div class="row" id="logCustom" hidden>
+      <div><label for="logFrom">Start</label><input id="logFrom" type="datetime-local"></div>
+      <div><label for="logTo">End</label><input id="logTo" type="datetime-local"></div>
+    </div>
+    <div class="seg" id="logShow" role="group" aria-label="Show on the plot">
+      <button type="button" data-show="actual" aria-pressed="false">Actual</button>
+      <button type="button" data-show="sched" aria-pressed="false">Schedule</button>
+      <button type="button" data-show="both" aria-pressed="true">Both</button>
     </div>
     <div class="chips" id="logMeds" role="group" aria-label="Medications to show"></div>
     <div id="chartWrap"><svg id="chart" role="img" aria-label="Dose Log: scatter plot of doses by medication over time, shaded by time range"></svg></div>
+    <div class="legend" id="marks" aria-hidden="true">
+      <span><b class="mk fill"></b>Taken</span><span><b class="mk ring"></b>Scheduled</span><span><b class="mk dash"></b>Upcoming as needed (optional)</span>
+    </div>
     <div class="legend" id="legend" aria-hidden="true"></div>
     <p id="detail" aria-live="polite"></p>
   </details>
@@ -347,7 +373,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 <script>
 (function(){
   /* ================= Basics ================= */
-  const KEY = "medlog.v1", SKEY = "medlog.schedules.v1", RKEY = "medlog.ranges.v1", MKEY = "medlog.meds.v1", UKEY = "medlog.ui.v1";
+  const KEY = "medlog.v1", SKEY = "medlog.schedules.v1", RKEY = "medlog.ranges.v1", MKEY = "medlog.meds.v1", UKEY = "medlog.ui.v1", AKEY = "medlog.adjust.v1";
   const COLORS = ["#1d6b66","#c2410c","#6d28d9","#b45309","#0369a1","#be185d","#4d7c0f","#475569","#a16207","#0e7490"];
   const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const $ = id => document.getElementById(id);
@@ -360,6 +386,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   let ranges = read(RKEY, null);
   let medSettings = read(MKEY, {}) || {};
   let ui = read(UKEY, {}) || {};
+  let adjustments = read(AKEY, []); if(!Array.isArray(adjustments)) adjustments = [];
   let range = "7", editingId = null, formMode = "sched";
 
   const persist = () => write(KEY, entries);
@@ -367,6 +394,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   const persistR = () => write(RKEY, ranges);
   const persistM = () => write(MKEY, medSettings);
   const persistUI = () => write(UKEY, ui);
+  const persistA = () => write(AKEY, adjustments);
 
   function toast(msg){
     const t = $("toast"); t.textContent = msg; t.classList.add("show");
@@ -529,7 +557,6 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   }
 
   /* ================= Timed schedules ================= */
-  const GRACE = 60 * 60000; // a dose taken up to an hour early counts for that time
   // Evenly spaced doses: 24 h ÷ doses, squeezed so the last one lands by the "no later than" time.
   function plan(per, first, latest){
     per = Math.round(Number(per));
@@ -554,29 +581,60 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     for(let i = 1; i <= 7; i++){ const sl = slotsOn(med, addDaysTs(dayTs, i)); if(sl.length) return sl[0]; }
     return null;
   }
+  // Midpoint rule: each scheduled time owns the window from halfway after the previous scheduled time to
+  // halfway before the next one (across days and across all of the medication's timed schedules).
+  // A dose taken in that window counts for it. Before its time it's upcoming; after its time it's overdue
+  // until the midpoint to the next dose, then missed.
+  function timeline(med, now){
+    const today = dayStartTs(now), slots = [];
+    for(let i = -3; i <= 2; i++) slots.push(...slotsOn(med, addDaysTs(today, i)));
+    applyAdjustments(med, slots);
+    slots.sort((a,b) => a.t - b.t);
+    const live = slots.filter(s => !s.skipped); // skipped (counted as missed) times own no window
+    slots.forEach(s => {
+      const i = live.indexOf(s), prev = live[i - 1], next = live[i + 1];
+      s.lo = prev ? (prev.t + s.t) / 2 : s.t - 12 * 36e5;
+      s.hi = next ? (s.t + next.t) / 2 : s.t + 12 * 36e5;
+    });
+    const doses = entries.filter(e => sameMed(e.med, med) && e.t <= now && entryKind(e) !== "prn").sort((a,b) => a.t - b.t);
+    // Doses the person assigned to a specific time (late-dose choices) first, then the midpoint windows.
+    doses.filter(e => e.forSlot).forEach(e => { const s = slots.find(x => x.orig === e.forSlot && !x.by); if(s) s.by = e; });
+    doses.filter(e => !e.forSlot).forEach(e => {
+      const s = slots.find(x => !x.skipped && e.t >= x.lo && e.t < x.hi);
+      if(s && !s.by) s.by = e; // a second dose in the same window is an extra, not the next dose
+    });
+    slots.forEach(s => {
+      s.taken = !!s.by;
+      s.state = s.taken ? "taken" : s.skipped ? "missed" : now < s.t ? "upcoming" : now < s.hi ? "overdue" : "missed";
+    });
+    return { slots, today };
+  }
+  // Temporary shifts after a late dose move specific scheduled times; s.orig keeps the original time.
+  function applyAdjustments(med, slots){
+    slots.forEach(s => { s.orig = s.t; });
+    adjustments.filter(a => sameMed(a.med, med)).forEach(a => (a.shifts || []).forEach(sh => {
+      const s = slots.find(x => x.orig === sh.from); if(s){ s.t = sh.to; s.shifted = true; }
+    }));
+    adjustments.filter(a => sameMed(a.med, med)).forEach(a => (a.skip || []).forEach(t => {
+      const s = slots.find(x => x.orig === t); if(s) s.skipped = true;
+    }));
+    return slots;
+  }
   function statusFor(med){
     if(!timedScheds(med).length) return null;
-    const now = Date.now(), today = dayStartTs(now);
-    const slots = slotsOn(med, today);
-    if(!slots.length){ const nx = nextDaySlot(med, today); return nx ? { state:"off", k:0, n:0, missed:0, slot: nx, nextT: nx.t } : null; }
-    const taken = entries.filter(e => sameMed(e.med, med) && e.t >= today && e.t <= now && entryKind(e) !== "prn").sort((a,b) => a.t - b.t);
-    // Each dose covers the latest open time it's due for; open times it skips over become missed, not overdue.
-    let ptr = 0; const counted = [];
-    taken.forEach(e => {
-      if(ptr >= slots.length) return;
-      let j = -1;
-      for(let i = ptr; i < slots.length; i++) if(slots[i].t <= e.t + GRACE) j = i;
-      if(j < 0){ if(!e.sid) return; j = ptr; } // hand-logged doses long before the next time don't count
-      for(let i = ptr; i < j; i++) slots[i].missed = true;
-      slots[j].taken = true; ptr = j + 1; counted.push(e);
-    });
-    const n = slots.length, last = counted[counted.length - 1];
-    const k = slots.filter(s => s.taken).length, missed = slots.filter(s => s.missed).length;
-    const rest = slots.slice(ptr);
-    if(!rest.length){ const nx = nextDaySlot(med, today) || slots[0]; return { state:"done", k, n, missed, last, slot: nx, nextT: nx.t }; }
-    const due = rest.filter(s => s.t <= now);
-    if(due.length){ const s = due[due.length - 1]; return { state:"overdue", k, n, missed, overdue: due.length, last, slot: s, nextT: s.t }; }
-    return { state:"upcoming", k, n, missed, last, slot: rest[0], nextT: rest[0].t };
+    const now = Date.now();
+    const { slots, today } = timeline(med, now), tomorrow = addDaysTs(today, 1);
+    const todays = slots.filter(s => s.t >= today && s.t < tomorrow);
+    const n = todays.length, k = todays.filter(s => s.taken).length, missed = todays.filter(s => s.state === "missed").length;
+    const lastTaken = slots.filter(s => s.taken && s.by.t >= today - 864e5).map(s => s.by).sort((a,b) => b.t - a.t)[0];
+    const od = slots.filter(s => s.state === "overdue").pop();
+    if(od) return { state:"overdue", k, n, missed, last: lastTaken, slot: od, nextT: od.t, until: od.hi, carried: od.t < today };
+    const up = slots.find(s => s.state === "upcoming" && s.t < tomorrow);
+    if(up) return { state:"upcoming", k, n, missed, last: lastTaken, slot: up, nextT: up.t };
+    const nx = slots.find(s => s.state === "upcoming") || nextDaySlot(med, today);
+    if(!nx) return null;
+    if(!n) return { state:"off", k:0, n:0, missed:0, slot: nx, nextT: nx.t };
+    return { state:"done", k, n, missed, last: lastTaken, slot: nx, nextT: nx.t };
   }
 
   /* ================= As-needed (PRN) schedules =================
@@ -618,6 +676,8 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     if(last){
       const ru = ruleAt(med, last.t);
       if(ru){ const u = amountOf(ru.b, 1); allowT = last.t + Number(ru.b.gapH) * 36e5 * (ru.s.scale !== false ? amountOf(last, u) / u : 1); }
+      const mg = Number(medSet(med).minGapH) || 0;
+      if(mg) allowT = Math.max(allowT, last.t + mg * 36e5);
     }
     const day = past.filter(e => e.t > now - 864e5);
     const used = day.reduce((t, e) => t + amountOf(e, 1), 0);
@@ -641,14 +701,149 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       slot: { dose: b.dose, unit: s.unit, sid: s.id, range: r ? r.id : "", kind:"prn" } };
   }
 
-  function logDose(med, slot, amount){
-    const dose = amount ?? slot.dose;
-    if(!overMaxOk(med, dose)) return;
+  /* ----- Late doses: between 40% and 75% of the way to the next dose, ask how to handle it ----- */
+  const LATE_FROM = 0.40, LATE_TO = 0.75;
+  function lateInfo(med, L){
+    if(!timedScheds(med).length) return null;
+    const { slots } = timeline(med, L);
+    const before = slots.filter(s => s.t <= L);
+    const s0 = before[before.length - 1];
+    if(!s0 || s0.taken) return null;
+    const after = slots.filter(s => s.t > s0.t);
+    if(!after.length) return null;
+    const frac = (L - s0.t) / (after[0].t - s0.t);
+    if(frac < LATE_FROM || frac > LATE_TO) return null;
+    return { s0, after, frac };
+  }
+  // Checks a planned sequence of doses (after the dose at L) against the minimum gap and daily max.
+  function checkPlan(med, L, doseAmt, planned){
+    const lim = medSet(med), minGap = (Number(lim.minGapH) || 0) * 36e5, max = Number(lim.max) || 0, issues = [];
+    let prev = L;
+    for(const p of planned){
+      if(p.t <= prev){ issues.push("Times need to be in order and after this dose."); break; }
+      if(minGap && p.t - prev < minGap - 30000){ issues.push(`${fmtTime(p.t)} is only ${dur(p.t - prev)} after the dose before it; the minimum is ${dur(minGap)}.`); break; }
+      prev = p.t;
+    }
+    if(max){
+      const seq = [...entries.filter(e => sameMed(e.med, med)).map(e => ({ t: e.t, a: amountOf(e, 1) })), { t: L, a: amountOf({ dose: doseAmt }, 1) },
+        ...planned.map(p => ({ t: p.t, a: amountOf(p, 1) }))];
+      for(const p of [{ t: L }, ...planned]){
+        const tot = seq.filter(x => x.t > p.t - 864e5 && x.t <= p.t).reduce((t, x) => t + x.a, 0);
+        if(tot > max + 1e-9){ issues.push(`By ${fmtTime(p.t)} that would be ${+tot.toFixed(2)} in 24 hours, over the daily max of ${max}.`); break; }
+      }
+    }
+    return issues;
+  }
+  const round5 = t => Math.round(t / 3e5) * 3e5;
+  // Compresses the gaps between the late dose and the dose where the schedule is back to normal,
+  // keeping their proportions (an evenly spaced schedule stays evenly spaced; a long overnight gap stays longest).
+  function shiftPlan(info, L, n){
+    const target = info.after[n]; if(!target) return null;
+    const k = (target.t - L) / (target.t - info.s0.t);
+    return info.after.slice(0, n).map(s => ({ from: s.orig, t: round5(target.t - (target.t - s.t) * k), dose: s.dose, unit: s.unit }));
+  }
+  // Resolves with { forSlot, shifts } or {} (nothing to decide) or null (cancelled).
+  function lateFlow(med, L, doseAmt){
+    const info = lateInfo(med, L);
+    if(!info) return Promise.resolve({});
+    const { s0, after, frac } = info, s1 = after[0];
+    const tail = (from, count) => after.slice(from, from + count).map(s => ({ t: s.t, dose: s.dose, unit: s.unit }));
+    const keepIssues = checkPlan(med, L, doseAmt, tail(0, 3));
+    const skipIssues = checkPlan(med, L, doseAmt, tail(1, 3));
+    const maxN = Math.min(3, after.length - 1);
+    let n = Math.min(2, maxN);
+    const validShift = k => { const pl = shiftPlan(info, L, k); return pl && !checkPlan(med, L, doseAmt, [...pl, ...tail(k, 2)]).length; };
+    while(n > 1 && !validShift(n)) n--;
+    const shiftOk = n >= 1 && validShift(n);
+
+    return new Promise(resolve => {
+      const m = $("modal"), box = $("modalBox"); box.replaceChildren();
+      const done = v => { m.hidden = true; m.onclick = null; resolve(v); };
+      const el = (tag, cls, text) => { const x = document.createElement(tag); if(cls) x.className = cls; if(text != null) x.textContent = text; return x; };
+      const h = el("h3", null, `This ${med} dose is ${dur(L - s0.t)} late`); h.id = "modalH";
+      box.append(h, el("p", null, `It’s ${Math.round(frac * 100)}% of the way from your ${fmtTime(s0.t)} dose to the ${fmtTime(s1.t)} dose. How should the schedule handle it?`));
+
+      // Option 1: temporary shift (suggested when it fits the limits)
+      const card = el("div", "ex"); card.style.display = "block";
+      const ttl = el("div", null); ttl.style.fontWeight = "700";
+      ttl.textContent = "Shift the next doses" + (shiftOk ? " (suggested)" : "");
+      const sub = el("small"); sub.style.cssText = "display:block;color:var(--muted);margin:2px 0 8px";
+      const seg = el("div", "seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "How many doses to shift");
+      const times = el("div"), issues = el("p", "hint warn"), use = el("button", "opt primary", "Use these times");
+      let inputs = [];
+      const read = () => inputs.map((inp, i) => ({ ...shiftPlan(info, L, n)[i], t: new Date(inp.value).getTime() }));
+      const validate = () => {
+        const pl = read();
+        const bad = pl.some(p => isNaN(p.t)) ? ["Enter a date and time for each dose."] : checkPlan(med, L, doseAmt, [...pl, ...tail(n, 2)]);
+        if(!bad.length && pl[pl.length - 1].t >= after[n].t) bad.push(`The last shifted dose needs to be before ${fmtTime(after[n].t)}.`);
+        issues.textContent = bad.join(" "); use.disabled = !!bad.length; use.style.opacity = bad.length ? ".5" : "";
+      };
+      const build = () => {
+        seg.replaceChildren();
+        for(let k = 1; k <= maxN; k++){
+          const b = el("button", null, k === 1 ? "1 dose" : `${k} doses`); b.type = "button";
+          b.setAttribute("aria-pressed", k === n ? "true" : "false");
+          b.addEventListener("click", () => { n = k; build(); });
+          seg.appendChild(b);
+        }
+        const pl = shiftPlan(info, L, n);
+        sub.textContent = `Counts as the ${fmtTime(s0.t)} dose. Spreads the next ${n === 1 ? "dose" : n + " doses"} out to catch up, then back to normal at ${fmtTime(after[n].t)}. You can adjust the times.`;
+        times.replaceChildren(); inputs = [];
+        pl.forEach((p, i) => {
+          const row = el("div", "full");
+          const lab = el("label", null, `Instead of ${fmtTime(after[i].t)}`); const inp = document.createElement("input");
+          inp.type = "datetime-local"; inp.id = "shift" + i; lab.htmlFor = inp.id; inp.value = localInput(new Date(p.t));
+          inp.addEventListener("input", validate); row.append(lab, inp); times.appendChild(row); inputs.push(inp);
+        });
+        validate();
+      };
+      if(maxN >= 1){
+        card.append(ttl, sub, seg, times, issues, use);
+        use.addEventListener("click", () => { if(use.disabled) return; done({ forSlot: s0.orig, shifts: read().map(p => ({ from: p.from, to: p.t })) }); });
+        box.appendChild(card); build();
+      }
+
+      // Option 2: count one as missed, resume normally
+      const skip = el("button", "opt " + (shiftOk ? "ghost" : "primary"), `Count the ${fmtTime(s0.t)} dose as missed`);
+      skip.appendChild(el("small", null, skipIssues.length ? skipIssues.join(" ") : `This dose counts as the ${fmtTime(s1.t)} dose. Normal schedule resumes${after[1] ? ": next dose at " + fmtTime(after[1].t) : ""}.`));
+      if(skipIssues.length){ skip.disabled = true; skip.style.opacity = ".5"; }
+      skip.addEventListener("click", () => done({ forSlot: s1.orig, skip: [s0.orig] }));
+      // Option 3: keep the schedule as is
+      const keep = el("button", "opt ghost", "Keep the normal schedule");
+      keep.appendChild(el("small", null, keepIssues.length ? keepIssues.join(" ") : `Counts as the ${fmtTime(s0.t)} dose; next dose still at ${fmtTime(s1.t)}.`));
+      if(keepIssues.length){ keep.disabled = true; keep.style.opacity = ".5"; }
+      keep.addEventListener("click", () => done({ forSlot: s0.orig }));
+      const cancel = el("button", "opt ghost", "Cancel, don’t log it");
+      cancel.addEventListener("click", () => done(null));
+      box.append(skip, keep, cancel);
+      m.hidden = false; m.onclick = ev => { if(ev.target === m) done(null); };
+    });
+  }
+  function overGapOk(med, t){
+    const mg = (Number(medSet(med).minGapH) || 0) * 36e5; if(!mg) return true;
+    const prev = entries.filter(e => sameMed(e.med, med) && e.t <= t).sort((a,b) => b.t - a.t)[0];
+    return !prev || t - prev.t >= mg - 30000 || confirm(`Only ${dur(t - prev.t)} since the last ${med} dose; the minimum is ${dur(mg)}. Log anyway?`);
+  }
+  // Shared by Log now and the Log a dose form.
+  async function recordDose(e){
+    if(entryKind(e) !== "prn" && !e.forSlot){
+      const res = await lateFlow(e.med, e.t, e.dose);
+      if(res === null) return false;
+      if(res.forSlot != null){ e.forSlot = res.forSlot; e.sid = e.sid || (timedScheds(e.med)[0] || {}).id; if(e.kind === "manual") e.kind = "sched"; }
+      if((res.shifts && res.shifts.length) || (res.skip && res.skip.length)){
+        adjustments.push({ id: uid(), med: e.med, doseId: e.id, shifts: res.shifts || [], skip: res.skip || [] }); persistA();
+      }
+    }
+    if(!overMaxOk(e.med, e.dose) || !overGapOk(e.med, e.t)) return false;
+    entries.push(e); persist();
+    return true;
+  }
+  async function logDose(med, slot, amount){
     const existing = medNames().find(n => sameMed(n, med));
-    const e = { id: uid(), med: existing || med, dose, unit: slot.unit, t: Date.now(), note: "", sid: slot.sid, kind: slot.kind };
+    const e = { id: uid(), med: existing || med, dose: amount ?? slot.dose, unit: slot.unit, t: Date.now(), note: "", sid: slot.sid, kind: slot.kind };
     if(slot.range) e.range = slot.range;
-    entries.push(e);
-    persist(); toast(`Logged ${med}${fmtDose(e) ? " " + fmtDose(e) : ""}.`); renderAll();
+    if(!(await recordDose(e))) return;
+    toast(`Logged ${med}${fmtDose(e) ? " " + fmtDose(e) : ""}.`); renderAll();
   }
 
   /* ================= Up next ================= */
@@ -734,14 +929,18 @@ fieldset.period legend{font-weight:700;padding:0 6px}
         const meta = document.createElement("div"); meta.className = "meta";
         if(st.state === "off") meta.textContent = "No doses scheduled today";
         else {
-          const bits = [`${st.k} of ${st.n} taken today`];
+          const bits = [st.state === "overdue"
+            ? `${st.carried ? "Last night’s dose still counts" : "Still counts"} if taken by ${fmtTime(st.until)}, then missed`
+            : `${st.k} of ${st.n} taken today`];
+          if(st.state === "overdue" && st.n) bits.push(`${st.k} of ${st.n} taken today`);
           if(st.missed) bits.push(`${st.missed} missed`);
-          if(st.overdue > 1) bits.push(`${st.overdue} overdue`);
           if(st.last) bits.push(`last at ${fmtTime(st.last.t)}`);
           meta.textContent = bits.join(", ") + (st.state === "done" ? ". Done for today." : "");
         }
         const max = Number(medSet(med).max) || 0;
         if(max) meta.textContent += `. ${+usedIn24(med).toFixed(2)} of ${fmtAmt(max, st.slot.unit)} in the last 24 h`;
+        if(st.slot && st.slot.shifted){ const tg = document.createElement("span"); tg.className = "tag"; tg.textContent = "shifted"; name.appendChild(tg);
+          meta.textContent += `. Moved from ${fmtTime(st.slot.orig)} after a late dose`; }
         info.append(meta);
       }
 
@@ -790,6 +989,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       const lim = medSet(med), unit = (schedules.find(s => sameMed(s.med, med)) || {}).unit || "";
       if(lim.max) parts.push(`Daily max ${fmtAmt(lim.max, unit)}`);
       if(lim.maxPer) parts.push(`Up to ${fmtAmt(lim.maxPer, unit)} per dose`);
+      if(lim.minGapH) parts.push(`At least ${dur(lim.minGapH * 36e5)} between doses`);
       nx.textContent = parts.join(". ");
       head.append(dot, nm, nx); box.appendChild(head);
 
@@ -1034,6 +1234,16 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       const big = Math.max(0, ...doses);
       if(big > most + 1e-9) msgs.push(`A ${fmtAmt(big, unit)} dose is more than the most per dose (${fmtAmt(most, unit)}).`);
     }
+    const minGap = (Number($("sMinGap").value) || 0) * 60;
+    if(minGap){
+      let tight = 0;
+      for(let wd = 0; wd < 7; wd++){
+        const mins = all.filter(s => !s.days || !s.days.length || s.days.includes(wd)).flatMap(s => isPrn(s)
+          ? (s.blocks || []).flatMap(b => blockOffsets(b)) : ((plan(s.per, s.first, s.latest) || { times: [] }).times)).sort((a,b) => a - b);
+        for(let i = 1; i < mins.length; i++) if(mins[i] - mins[i-1] < minGap - 0.5) tight = Math.max(tight, 1);
+      }
+      if(tight) msgs.push(`Some planned doses are closer together than the minimum of ${dur(minGap * 60000)}.`);
+    }
     if(rec.mode === "prn"){
       if(rec.blocks.some(b => outsideTimes(b).length)) msgs.push("Some planned doses fall outside their time range.");
       const rs = rec.blocks.map(b => b.rangeId).filter(Boolean);
@@ -1088,13 +1298,13 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     p.times.forEach(m => { const s = document.createElement("span"); s.className = "time"; s.textContent = minLabel(m); box.appendChild(s); });
     $("sGap").textContent = (rec.per === 1 ? "Once a day" : `About every ${dur(p.gap * 60000)}`) + `, ${daysLabel(rec.days)}.`;
   }
-  ["sPer","sFirst","sLatest","sMax","sMaxPer","sDose","sUnit"].forEach(id => $(id).addEventListener("input", updatePreview));
+  ["sPer","sFirst","sLatest","sMax","sMaxPer","sMinGap","sDose","sUnit"].forEach(id => $(id).addEventListener("input", updatePreview));
   $("sScale").addEventListener("change", updatePreview);
   $("sMed").addEventListener("input", updatePreview);
   $("sMed").addEventListener("change", () => {
     const med = $("sMed").value.trim(); if(!med) return;
     const lim = medSet(med);
-    if(!editingId){ $("sMax").value = lim.max || ""; $("sMaxPer").value = lim.maxPer || ""; }
+    if(!editingId){ $("sMax").value = lim.max || ""; $("sMaxPer").value = lim.maxPer || ""; $("sMinGap").value = lim.minGapH || ""; }
     const last = lastFor(med);
     if(last && $("sDose").value === ""){ $("sDose").value = last.dose ?? ""; $("sUnit").value = last.unit || ""; }
     updatePreview();
@@ -1103,7 +1313,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   function startEdit(s){
     editingId = s.id;
     $("sMed").value = s.med;
-    const lim = medSet(s.med); $("sMax").value = lim.max || ""; $("sMaxPer").value = lim.maxPer || "";
+    const lim = medSet(s.med); $("sMax").value = lim.max || ""; $("sMaxPer").value = lim.maxPer || ""; $("sMinGap").value = lim.minGapH || "";
     fillDays(s.days);
     if(isPrn(s)){
       $("blocks").replaceChildren();
@@ -1121,7 +1331,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   function resetForm(){
     editingId = null;
     $("sMed").value = ""; $("sPer").value = 2; $("sFirst").value = "08:00"; $("sLatest").value = "22:00";
-    $("sDose").value = ""; $("sUnit").value = "mg"; $("sMax").value = ""; $("sMaxPer").value = ""; $("sScale").checked = true;
+    $("sDose").value = ""; $("sUnit").value = "mg"; $("sMax").value = ""; $("sMaxPer").value = ""; $("sMinGap").value = ""; $("sScale").checked = true;
     $("blocks").replaceChildren();
     customDays = []; setRepeat("all");
     $("schedFormH").textContent = "Add a schedule"; $("sCancel").hidden = true; setMode("sched");
@@ -1157,7 +1367,8 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     rec.med = medNames().find(n => sameMed(n, rec.med)) || rec.med;
     const bad = problems(rec);
     if(bad.length){ toast(bad[0]); return; }
-    const maxRaw = $("sMax").value.trim(), mpRaw = $("sMaxPer").value.trim();
+    const maxRaw = $("sMax").value.trim(), mpRaw = $("sMaxPer").value.trim(), mgRaw = $("sMinGap").value.trim();
+    if(mgRaw !== "" && !(Number(mgRaw) >= 0 && Number(mgRaw) <= 48)){ toast("Minimum hours between doses must be 0 to 48, or blank."); return; }
     if(maxRaw !== "" && !(Number(maxRaw) > 0)){ toast("Daily max must be a number, or blank."); return; }
     if(mpRaw !== "" && !(Number(mpRaw) > 0)){ toast("Most per dose must be a number, or blank."); return; }
 
@@ -1192,7 +1403,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     if(replace) schedules = schedules.filter(s => !sameMed(s.med, rec.med));
     if(editingId) schedules = schedules.map(x => x.id === editingId ? { id: x.id, ...rec } : x);
     else schedules.push({ id: uid(), ...rec });
-    medSettings[rec.med.toLowerCase()] = { ...(medSettings[rec.med.toLowerCase()] || {}), max: Number(maxRaw) || 0, maxPer: Number(mpRaw) || 0 };
+    medSettings[rec.med.toLowerCase()] = { ...(medSettings[rec.med.toLowerCase()] || {}), max: Number(maxRaw) || 0, maxPer: Number(mpRaw) || 0, minGapH: Number(mgRaw) || 0 };
     persistS(); persistM();
     toast((replace ? "Replaced: " : "Saved: ") + rec.med + "."); resetForm(); renderAll();
   });
@@ -1218,7 +1429,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     });
     box.style.display = recent.length ? "" : "none";
   }
-  $("save").addEventListener("click", () => {
+  $("save").addEventListener("click", async () => {
     const med = $("med").value.trim();
     if(!med){ toast("Enter a medication name."); $("med").focus(); return; }
     const doseRaw = $("dose").value.trim();
@@ -1227,9 +1438,8 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     const when = $("when").value ? new Date($("when").value) : new Date();
     if(isNaN(when)){ toast("Check the date and time."); return; }
     const existing = medNames().find(n => sameMed(n, med));
-    if(!overMaxOk(existing || med, dose)) return;
-    entries.push({ id: uid(), med: existing || med, dose, unit: $("unit").value.trim(), t: when.getTime(), note: $("note").value.trim(), kind: "manual" });
-    persist();
+    const e = { id: uid(), med: existing || med, dose, unit: $("unit").value.trim(), t: when.getTime(), note: $("note").value.trim(), kind: "manual" };
+    if(!(await recordDose(e))) return;
     $("note").value = ""; $("when").value = localInput(new Date());
     toast("Logged " + (existing || med) + ".");
     renderAll();
@@ -1237,12 +1447,61 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 
   /* ================= Dose Log chart ================= */
   let hiddenMeds = new Set(Array.isArray(ui.hiddenMeds) ? ui.hiddenMeds : []);
-  document.querySelectorAll(".seg button[data-range]").forEach(b => b.addEventListener("click", () => {
-    range = b.dataset.range;
-    document.querySelectorAll(".seg button[data-range]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
-    $("detail").textContent = "";
-    renderChart();
+  let logShow = ui.logShow || "both";
+  range = ui.logRange || "7";
+  $("logRange").value = range;
+  function syncLogUI(){
+    $("logCustom").hidden = range !== "custom";
+    document.querySelectorAll("#logShow button").forEach(x => x.setAttribute("aria-pressed", x.dataset.show === logShow ? "true" : "false"));
+  }
+  function defaultCustom(){
+    const t0 = new Date(dayStartTs(Date.now()));
+    const t1 = new Date(t0); t1.setHours(23, 59, 0, 0);
+    if(!$("logFrom").value) $("logFrom").value = localInput(t0);
+    if(!$("logTo").value) $("logTo").value = localInput(t1);
+  }
+  $("logRange").addEventListener("change", () => {
+    range = $("logRange").value; ui.logRange = range; persistUI();
+    if(range === "custom") defaultCustom();
+    syncLogUI(); $("detail").textContent = ""; renderChart();
+  });
+  ["logFrom","logTo"].forEach(id => $(id).addEventListener("change", () => { $("detail").textContent = ""; renderChart(); }));
+  document.querySelectorAll("#logShow button").forEach(b => b.addEventListener("click", () => {
+    logShow = b.dataset.show; ui.logShow = logShow; persistUI(); syncLogUI(); renderChart();
   }));
+  syncLogUI(); if(range === "custom") defaultCustom();
+  function chartWindow(now){
+    const today = dayStartTs(now), endOf = ts => addDaysTs(ts, 1) - 60000;
+    switch(range){
+      case "today": return [today, endOf(today)];
+      case "yesterday": { const y = addDaysTs(today, -1); return [y, endOf(y)]; }
+      case "2d": return [addDaysTs(today, -1), endOf(today)];
+      case "custom": {
+        const a = new Date($("logFrom").value).getTime(), b = new Date($("logTo").value).getTime();
+        if(!isNaN(a) && !isNaN(b) && b > a) return [a, b];
+        return [today, endOf(today)];
+      }
+      case "all": return null;
+      default: return [now - Number(range) * 864e5, now + 36e5 * 0.5];
+    }
+  }
+  // Timed schedule times and upcoming as-needed planned times inside a window.
+  function plannedMarks(x0, x1, now){
+    const out = [];
+    for(let d = dayStartTs(x0); d <= x1; d = addDaysTs(d, 1)){
+      medsWhere(s => !isPrn(s)).forEach(med => applyAdjustments(med, slotsOn(med, d)).forEach(s => { if(!s.skipped && s.t >= x0 && s.t <= x1) out.push({ med, t: s.t, dose: s.dose, unit: s.unit, kind:"sched", shifted: s.shifted, orig: s.orig }); }));
+    }
+    medsWhere(isPrn).forEach(med => {
+      const p = prnFor(med); if(!p) return;
+      const from = Math.max(now, p.allowT, x0);
+      for(let d = addDaysTs(dayStartTs(from), -1); d <= x1; d = addDaysTs(d, 1)){
+        blocksOnDay(med, d).forEach(inst => blockOffsets(inst.b).forEach(m => {
+          const t = atDayMin(d, m); if(t >= from && t <= x1) out.push({ med, t, dose: inst.b.dose, unit: inst.s.unit, kind:"prn", range: inst.r });
+        }));
+      }
+    });
+    return out;
+  }
   function renderMedFilter(){
     const box = $("logMeds"); box.replaceChildren();
     const names = [...new Set(entries.map(e => medNames().find(n => sameMed(n, e.med)) || e.med))].sort((a,b) => a.localeCompare(b));
@@ -1278,17 +1537,18 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     const now = Date.now();
     const visible = entries.filter(e => !hiddenMeds.has(e.med.toLowerCase()));
     let x0, x1;
-    if(range === "all"){
-      if(!visible.length){ x0 = now - 7*864e5; x1 = now; }
-      else {
-        const ts = visible.map(e => e.t);
-        x0 = Math.min(...ts); x1 = Math.max(...ts, now);
-        const padT = Math.max((x1 - x0) * 0.04, 36e5); x0 -= padT; x1 += padT;
-      }
-    } else { x1 = now + 36e5 * 0.5; x0 = now - Number(range) * 864e5; }
+    const win = chartWindow(now);
+    if(win){ [x0, x1] = win; }
+    else if(!visible.length){ x0 = now - 7*864e5; x1 = now; }
+    else {
+      const ts = visible.map(e => e.t);
+      x0 = Math.min(...ts); x1 = Math.max(...ts, now);
+      const padT = Math.max((x1 - x0) * 0.04, 36e5); x0 -= padT; x1 += padT;
+    }
 
-    const shown = visible.filter(e => e.t >= x0 && e.t <= x1);
-    const meds = [...new Set(shown.map(e => medNames().find(n => sameMed(n, e.med)) || e.med))].sort((a,b) => a.localeCompare(b));
+    const shown = logShow === "sched" ? [] : visible.filter(e => e.t >= x0 && e.t <= x1);
+    const marks = logShow === "actual" ? [] : plannedMarks(x0, x1, now).filter(m => !hiddenMeds.has(m.med.toLowerCase()));
+    const meds = [...new Set([...shown, ...marks].map(e => medNames().find(n => sameMed(n, e.med)) || e.med))].sort((a,b) => a.localeCompare(b));
     const W = Math.max($("chartWrap").clientWidth, 300);
     const left = 96, right = 14, top = 8, laneH = 46, axisH = 44;
     const lanes = Math.max(meds.length, 1);
@@ -1314,7 +1574,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 
     if(!meds.length){
       const tx = svgEl("text", {x: (left + W - right) / 2, y: top + laneH / 2 + 4, "text-anchor":"middle"});
-      tx.textContent = entries.length ? (visible.length ? "No doses in this range." : "All medications are hidden.") : "Log a dose to see it here.";
+      tx.textContent = hiddenMeds.size && !visible.length ? "All medications are hidden." : entries.length || schedules.length ? "Nothing in this range." : "Log a dose to see it here.";
       svg.appendChild(tx);
     }
     meds.forEach((m, i) => {
@@ -1343,16 +1603,32 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 
     // dots: size relative to that medication's largest dose
     const maxDose = {};
-    shown.forEach(e => { const k = e.med.toLowerCase(); maxDose[k] = Math.max(maxDose[k] || 0, Number(e.dose) || 0); });
+    [...shown, ...marks].forEach(e => { const k = e.med.toLowerCase(); maxDose[k] = Math.max(maxDose[k] || 0, Number(e.dose) || 0); });
+    const sizeOf = e => { const md = maxDose[e.med.toLowerCase()]; return md > 0 ? 3 + 3 * ((Number(e.dose) || 0) / md) : 4.5; };
+    // open circles: scheduled times (solid ring) and upcoming optional as-needed times (dashed ring)
+    marks.slice().sort((a,b) => a.t - b.t).forEach(mk => {
+      const i = meds.findIndex(m => sameMed(m, mk.med)); if(i < 0) return;
+      const cy = top + i * laneH + laneH / 2, cx = xs(mk.t), r = sizeOf(mk) + 1;
+      const label = mk.kind === "prn" ? "Upcoming as needed (optional)" : mk.shifted ? `Scheduled (shifted from ${fmtTime(mk.orig)})` : "Scheduled";
+      const desc = `${label}: ${mk.med}${fmtDose(mk) ? " " + fmtDose(mk) : ""}, ${fmtDay(mk.t)} at ${fmtTime(mk.t)}${mk.range ? " (" + mk.range.name.toLowerCase() + ")" : ""}`;
+      const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": desc, style:"cursor:pointer"});
+      g.appendChild(svgEl("circle", {cx, cy, r: 11, fill:"transparent"}));
+      const ring = { cx, cy, r, fill:"none", stroke: colorFor(mk.med), "stroke-width": 1.6 };
+      if(mk.kind === "prn"){ ring["stroke-dasharray"] = "2 2"; ring["stroke-opacity"] = "0.85"; }
+      g.appendChild(svgEl("circle", ring));
+      const show = () => { $("detail").textContent = desc; };
+      g.addEventListener("click", show);
+      g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); show(); }});
+      svg.appendChild(g);
+    });
     shown.slice().sort((a,b) => a.t - b.t).forEach(e => {
       const i = meds.findIndex(m => sameMed(m, e.med));
       const cy = top + i * laneH + laneH / 2, cx = xs(e.t);
-      const md = maxDose[e.med.toLowerCase()];
-      const r = md > 0 ? 3 + 3 * ((Number(e.dose) || 0) / md) : 4.5;
-      const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": `${e.med} ${fmtDose(e)}, ${fmtDay(e.t)} ${fmtTime(e.t)}`, style:"cursor:pointer"});
+      const r = sizeOf(e);
+      const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": `Taken: ${e.med} ${fmtDose(e)}, ${fmtDay(e.t)} ${fmtTime(e.t)}`, style:"cursor:pointer"});
       g.appendChild(svgEl("circle", {cx, cy, r: 11, fill:"transparent"}));
       g.appendChild(svgEl("circle", {cx, cy, r, fill: colorFor(e.med), "fill-opacity":"0.9", stroke:"var(--surface)", "stroke-width":"1"}));
-      const show = () => { $("detail").textContent = `${e.med}${fmtDose(e) ? " " + fmtDose(e) : ""}, taken ${fmtDay(e.t)} at ${fmtTime(e.t)}${e.note ? ". " + e.note : ""}`; };
+      const show = () => { $("detail").textContent = `Taken: ${e.med}${fmtDose(e) ? " " + fmtDose(e) : ""}, ${fmtDay(e.t)} at ${fmtTime(e.t)}${kindLabel(e)}${e.note ? ". " + e.note : ""}`; };
       g.addEventListener("click", show);
       g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); show(); }});
       svg.appendChild(g);
@@ -1414,7 +1690,9 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       del.setAttribute("aria-label", "Delete " + e.med + " at " + fmtTime(e.t));
       del.addEventListener("click", () => {
         if(!confirm(`Delete ${e.med} on ${day} at ${fmtTime(e.t)}?`)) return;
-        entries = entries.filter(x => x.id !== e.id); persist(); toast("Deleted."); renderAll();
+        entries = entries.filter(x => x.id !== e.id); persist();
+        if(adjustments.some(a => a.doseId === e.id)){ adjustments = adjustments.filter(a => a.doseId !== e.id); persistA(); }
+        toast("Deleted."); renderAll();
       });
       li.append(dot, what, del); ul.appendChild(li);
     });
