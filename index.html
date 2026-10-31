@@ -110,6 +110,18 @@ h3{font-size:1rem;margin:14px 0 8px}
 .rel.prn{color:var(--muted)}
 .rel.ready{color:var(--accent);font-weight:700}
 [hidden]{display:none !important}
+.hint.warn{color:var(--danger);font-weight:700}
+.hint.warn:empty{display:none}
+fieldset.period{border:1px solid var(--line);border-radius:12px;padding:10px 12px 4px;margin:0 0 12px;min-width:0}
+fieldset.period legend{font-weight:700;padding:0 6px}
+.time.out{border-color:var(--danger);color:var(--danger)}
+.meta.ok{color:var(--accent);font-weight:700}
+.check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.95rem;margin:22px 0 0;min-height:46px}
+.check input{width:22px;height:22px;min-height:0;flex:none;accent-color:var(--accent)}
+.amt{display:inline-flex;align-items:center;gap:6px;margin-top:6px}
+.amt button{min-height:36px;width:36px;padding:0;background:var(--band);border:1px solid var(--line);color:var(--ink);font-size:1.15rem;border-radius:8px}
+.amt button:disabled{opacity:.4}
+.amt span{min-width:76px;text-align:center;font-weight:700;font-size:.92rem}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
   background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
@@ -153,19 +165,55 @@ h3{font-size:1rem;margin:14px 0 8px}
         </div>
       </div>
       <div id="prnFields" hidden>
+        <fieldset class="period">
+          <legend>Daytime</legend>
+          <div class="row">
+            <div><label for="pDayStart">Start time</label><input id="pDayStart" type="time" value="07:00"></div>
+            <div><label for="pDayEnd">End time</label><input id="pDayEnd" type="time" value="21:00"></div>
+          </div>
+          <div class="row">
+            <div><label for="pDayDose">Dose</label><input id="pDayDose" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
+            <div><label for="pDayUnit">Unit</label><input id="pDayUnit" list="unitList" autocomplete="off" value="tablet"></div>
+          </div>
+          <div class="row">
+            <div><label for="pDayCount">Number of doses</label><input id="pDayCount" type="number" inputmode="numeric" min="1" max="24" step="1" value="5"></div>
+            <div><label for="pDayGap">Hours between doses</label><input id="pDayGap" type="number" inputmode="decimal" step="any" min="0.25" value="3"></div>
+          </div>
+          <div class="row">
+            <div><label for="pDayFirst">First dose</label><input id="pDayFirst" type="time" value="07:00"></div>
+          </div>
+          <div class="times" id="pDayTimes"></div>
+          <p class="hint warn" id="pDayNote"></p>
+        </fieldset>
+        <fieldset class="period">
+          <legend>Nighttime</legend>
+          <div class="row">
+            <div><label for="pNightStart">Start time</label><input id="pNightStart" type="time" value="21:00"></div>
+            <div><label for="pNightEnd">End time</label><input id="pNightEnd" type="time" value="07:00"></div>
+          </div>
+          <div class="row">
+            <div><label for="pNightDose">Dose</label><input id="pNightDose" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
+            <div><label for="pNightUnit">Unit</label><input id="pNightUnit" list="unitList" autocomplete="off" value="tablet"></div>
+          </div>
+          <div class="row">
+            <div><label for="pNightCount">Number of doses</label><input id="pNightCount" type="number" inputmode="numeric" min="1" max="24" step="1" value="2"></div>
+            <div><label for="pNightGap">Hours between doses</label><input id="pNightGap" type="number" inputmode="decimal" step="any" min="0.25" value="6"></div>
+          </div>
+          <div class="row">
+            <div><label for="pNightFirst">First dose</label><input id="pNightFirst" type="time" value="21:00"></div>
+          </div>
+          <div class="times" id="pNightTimes"></div>
+          <p class="hint warn" id="pNightNote"></p>
+        </fieldset>
+        <p class="hint">Daytime and nighttime always cover the full 24 hours: changing one’s start or end moves the other’s. Both use the same unit, so the daily max adds up correctly.</p>
         <div class="row">
-          <div>
-            <label for="sGapH">Hours between doses</label>
-            <input id="sGapH" type="number" inputmode="decimal" min="0.25" step="any" value="4">
-          </div>
-          <div>
-            <label for="sMax">Max per 24 h</label>
-            <input id="sMax" type="number" inputmode="numeric" min="1" step="1" placeholder="No limit">
-          </div>
+          <div><label for="sMax" id="sMaxLabel">Daily max (24 h)</label><input id="sMax" type="number" inputmode="decimal" step="any" min="0" placeholder="No limit"></div>
+          <div><label for="sMaxPer" id="sMaxPerLabel">Most per dose</label><input id="sMaxPer" type="number" inputmode="decimal" step="any" min="0" placeholder="Same as dose"></div>
         </div>
+        <label class="check" style="margin-top:0"><input type="checkbox" id="sScale" checked> Wait longer after bigger doses</label>
       </div>
-      <div class="row">
-        <div>
+      <div class="row" id="sDoseRow">
+        <div id="sDoseWrap">
           <label for="sDose">Dose</label>
           <input id="sDose" type="number" inputmode="decimal" step="any" min="0" placeholder="500">
         </div>
@@ -179,6 +227,7 @@ h3{font-size:1rem;margin:14px 0 8px}
         <div class="times" id="sPreview"></div>
       </div>
       <p class="hint" id="sGap"></p>
+      <p class="hint warn" id="sWarn" aria-live="polite"></p>
       <div class="tools">
         <button class="primary" id="sSave">Save schedule</button>
         <button class="ghost" id="sCancel" hidden>Cancel</button>
@@ -273,7 +322,11 @@ h3{font-size:1rem;margin:14px 0 8px}
   function localInput(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes()); }
   function fmtTime(t){ return new Date(t).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); }
   function fmtDay(t){ return new Date(t).toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"}); }
-  function fmtDose(e){ return (e.dose === "" || e.dose == null ? "" : e.dose + " ") + (e.unit || ""); }
+  function unitFor(n, unit){
+    const u = unit || "";
+    return Number(n) !== 1 && /^(tablet|capsule|pill|puff|drop|patch|spray|dose)$/i.test(u) ? u + "s" : u;
+  }
+  function fmtDose(e){ return e.dose === "" || e.dose == null ? (e.unit || "") : (e.dose + " " + unitFor(e.dose, e.unit)).trim(); }
 
   function medNames(){
     const seen = new Map();
@@ -323,6 +376,7 @@ h3{font-size:1rem;margin:14px 0 8px}
     const when = $("when").value ? new Date($("when").value) : new Date();
     if(isNaN(when)){ toast("Check the date and time."); return; }
     const existing = medNames().find(n => n.toLowerCase() === med.toLowerCase());
+    if(!overMaxOk(existing || med, dose)) return;
     entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
       med: existing || med, dose, unit: $("unit").value.trim(), t: when.getTime(), note: $("note").value.trim() });
     persist();
@@ -443,7 +497,8 @@ h3{font-size:1rem;margin:14px 0 8px}
       const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(e.med);
       const what = document.createElement("div"); what.className = "what";
       const top = document.createElement("div"); top.textContent = e.med + (fmtDose(e) ? " " + fmtDose(e) : "");
-      const when = document.createElement("div"); when.className = "when"; when.textContent = fmtTime(e.t);
+      const when = document.createElement("div"); when.className = "when"; const src = e.sid && schedules.find(x => x.id === e.sid);
+      when.textContent = fmtTime(e.t) + (src ? (src.mode === "prn" ? ", as needed" + (e.phase ? (e.phase === "night" ? " (night)" : " (day)") : "") : ", scheduled") : "");
       what.append(top, when);
       if(e.note){ const n = document.createElement("div"); n.className = "note"; n.textContent = e.note; what.appendChild(n); }
       const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
@@ -530,6 +585,44 @@ h3{font-size:1rem;margin:14px 0 8px}
   const isPrn = s => s.mode === "prn";
   const toMin = s => { const p = String(s || "").split(":").map(Number); return p.length === 2 && !p.some(isNaN) ? p[0]*60 + p[1] : NaN; };
   const GRACE = 60 * 60000; // a dose taken up to an hour early counts for that time
+  const schedById = id => schedules.find(x => x.id === id);
+  const prnRec = med => schedules.find(x => isPrn(x) && x.day && sameMed(x.med, med));
+  // Numeric amount of a dose or schedule (e.g. 2 tablets → 2); falls back when no number was entered.
+  function amountOf(x, fallback){ const v = Number(x.dose); return x.dose !== "" && x.dose != null && v > 0 ? v : (fallback || 1); }
+  function fmtAmt(n, unit){ const v = +Number(n).toFixed(2); return `${v}${unit ? " " + unitFor(v, unit) : ""}`; }
+  function inRange(min, start, end){
+    const s = toMin(start), e = toMin(end);
+    if(isNaN(s) || isNaN(e) || s === e) return true;
+    return s < e ? (min >= s && min < e) : (min >= s || min < e);
+  }
+  const minOf = ts => { const d = new Date(ts); return d.getHours() * 60 + d.getMinutes(); };
+  function shortTime(min){
+    const d = new Date(); d.setHours(Math.floor(min / 60), min % 60, 0, 0);
+    return d.toLocaleTimeString([], min % 60 ? { hour:"numeric", minute:"2-digit" } : { hour:"numeric" });
+  }
+
+  // Older as-needed schedules (one per time window) become a single daytime + nighttime schedule.
+  (function migrate(){
+    const legacy = schedules.filter(s => isPrn(s) && !s.day);
+    if(!legacy.length) return;
+    const fit = (s, e, g) => { const span = ((toMin(e) - toMin(s)) + 1440) % 1440 || 1440; return Math.max(1, Math.min(24, Math.floor((span - 1) / (g * 60)) + 1)); };
+    const groups = new Map();
+    legacy.forEach(s => { const k = s.med.toLowerCase(); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(s); });
+    groups.forEach(list => {
+      const hasWin = s => s.from && s.to && s.from !== s.to;
+      const dayS = list.find(s => !hasWin(s) || inRange(720, s.from, s.to)) || list[0];
+      const nightS = list.find(s => s !== dayS) || dayS;
+      const start = hasWin(dayS) ? dayS.from : "07:00", end = hasWin(dayS) ? dayS.to : "21:00";
+      const maxes = list.map(s => Number(s.max) || 0).filter(Boolean);
+      const rec = { id: dayS.id, med: dayS.med, mode: "prn", unit: dayS.unit || "",
+        max: maxes.length ? Math.min(...maxes) : 0, maxPer: Math.max(0, ...list.map(s => Number(s.maxPer) || 0)), scale: dayS.scale !== false,
+        day: { start, end, first: start, dose: amountOf(dayS, 1), gapH: Number(dayS.gapH) || 4, count: fit(start, end, Number(dayS.gapH) || 4) },
+        night: { start: end, end: start, first: end, dose: amountOf(nightS, 1), gapH: Number(nightS.gapH) || 4, count: fit(end, start, Number(nightS.gapH) || 4) } };
+      entries.forEach(e => { if(list.some(s => s.id === e.sid)) e.sid = rec.id; });
+      schedules = schedules.filter(s => !list.includes(s)).concat(rec);
+    });
+    persistS(); persist();
+  })();
 
   // Evenly spaced doses: 24 h ÷ doses, but squeezed so the last one lands by the "no later than" time.
   function plan(per, first, latest){
@@ -546,7 +639,7 @@ h3{font-size:1rem;margin:14px 0 8px}
   }
   function atMin(dayOffset, min){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + dayOffset); d.setMinutes(min); return d.getTime(); }
   function minLabel(min){ return fmtTime(atMin(0, min)); }
-  function whenLabel(t){ return t >= atMin(0, 0) ? fmtTime(t) : fmtDay(t) + " " + fmtTime(t); }
+  function whenLabel(t){ return t >= atMin(0, 0) && t < atMin(1, 0) ? fmtTime(t) : fmtDay(t) + " " + fmtTime(t); }
   function dur(ms){
     const m = Math.round(Math.abs(ms) / 60000);
     if(m < 1) return "under a minute";
@@ -559,27 +652,32 @@ h3{font-size:1rem;margin:14px 0 8px}
     return [...seen.values()];
   }
 
-  // Scheduled: all of a medication's timed schedules merged into one day of dose slots.
+  /* Timed schedules */
   function slotsFor(med){
     return schedules.filter(s => !isPrn(s) && sameMed(s.med, med)).flatMap(s => {
       const p = plan(s.per, s.first, s.latest);
-      return p ? p.times.map(m => ({ m, t: atMin(0, m), dose: s.dose, unit: s.unit })) : [];
+      return p ? p.times.map(m => ({ m, t: atMin(0, m), dose: s.dose, unit: s.unit, sid: s.id })) : [];
     }).sort((a,b) => a.m - b.m);
   }
   function statusFor(med){
     const slots = slotsFor(med); if(!slots.length) return null;
     const now = Date.now();
-    const taken = entries.filter(e => sameMed(e.med, med) && e.t >= atMin(0, 0) && e.t <= now).sort((a,b) => a.t - b.t);
+    const taken = entries.filter(e => {
+      if(!sameMed(e.med, med) || e.t < atMin(0, 0) || e.t > now) return false;
+      const src = e.sid && schedById(e.sid);
+      return !(src && isPrn(src)); // as-needed doses never count toward scheduled times
+    }).sort((a,b) => a.t - b.t);
     // Each dose covers the latest open slot it's due for; open slots it skips over become missed, not overdue.
-    let ptr = 0;
+    let ptr = 0; const counted = [];
     taken.forEach(e => {
       if(ptr >= slots.length) return;
-      let j = ptr;
+      let j = -1;
       for(let i = ptr; i < slots.length; i++) if(slots[i].t <= e.t + GRACE) j = i;
+      if(j < 0){ if(!e.sid) return; j = ptr; }
       for(let i = ptr; i < j; i++) slots[i].missed = true;
-      slots[j].taken = true; ptr = j + 1;
+      slots[j].taken = true; ptr = j + 1; counted.push(e);
     });
-    const n = slots.length, last = taken[taken.length - 1];
+    const n = slots.length, last = counted[counted.length - 1];
     const k = slots.filter(s => s.taken).length, missed = slots.filter(s => s.missed).length;
     const rest = slots.slice(ptr);
     if(!rest.length) return { state:"done", k, n, missed, last, slot: slots[0], nextT: atMin(1, slots[0].m) };
@@ -588,23 +686,100 @@ h3{font-size:1rem;margin:14px 0 8px}
     return { state:"upcoming", k, n, missed, last, slot: rest[0], nextT: rest[0].t };
   }
 
-  // As needed: next allowed time from the minimum gap and the 24-hour maximum. Never overdue or missed.
+  /* As-needed (PRN): a daytime and a nighttime period that together cover 24 hours, each with its own
+     dose, number of doses, time between doses and first dose. The planned times are a guide; doses
+     are never overdue or missed. */
+  function periodsOf(r){
+    return [
+      { key:"day", label:"Daytime", ...r.day },
+      { key:"night", label:"Nighttime", ...r.night, start: r.day.end, end: r.day.start }
+    ];
+  }
+  const periodAt = (r, ts) => { const [d, n] = periodsOf(r); return inRange(minOf(ts), d.start, d.end) ? d : n; };
+  // Planned dose times for a period, plus any that fall outside its hours.
+  function periodTimes(p){
+    const s = toMin(p.start), e = toMin(p.end), f = toMin(p.first), n = Math.round(Number(p.count)), g = Number(p.gapH);
+    if([s, e, f].some(isNaN) || !(n >= 1 && n <= 24) || !(g > 0 && g <= 24)) return null;
+    const span = ((e - s) + 1440) % 1440 || 1440;
+    const times = [], outside = [];
+    for(let i = 0; i < n; i++){
+      const off = Math.round((f + i * g * 60) / 5) * 5, m = ((off % 1440) + 1440) % 1440;
+      times.push(m);
+      if((((off - s) % 1440) + 1440) % 1440 >= span || off - f >= 1440) outside.push(m);
+    }
+    return { times, outside };
+  }
+  function plannedFrom(r, fromT){
+    const out = [];
+    periodsOf(r).forEach(p => {
+      const pt = periodTimes(p); if(!pt) return;
+      pt.times.forEach(m => { for(let d = -1; d <= 2; d++) out.push({ t: atMin(d, m), p }); });
+    });
+    return out.filter(x => x.t >= fromT).sort((a,b) => a.t - b.t);
+  }
   function prnFor(med){
-    const s = schedules.find(x => isPrn(x) && sameMed(x.med, med)); if(!s) return null;
+    const r = prnRec(med); if(!r) return null;
     const now = Date.now();
     const past = entries.filter(e => sameMed(e.med, med) && e.t <= now).sort((a,b) => a.t - b.t);
     const last = past[past.length - 1];
-    let nextT = last ? last.t + s.gapH * 36e5 : now;
+    const max = Number(r.max) || 0;
+    // Spacing follows the period the last dose was taken in, and is longer after a bigger dose.
+    let allowT = -Infinity;
+    if(last){
+      const p = periodAt(r, last.t), u = amountOf(p, 1);
+      const scale = r.scale !== false ? amountOf(last, u) / u : 1;
+      allowT = last.t + Number(p.gapH) * 36e5 * scale;
+    }
     const day = past.filter(e => e.t > now - 864e5);
-    if(s.max && day.length >= s.max) nextT = Math.max(nextT, day[day.length - s.max].t + 864e5);
-    return { state:"prn", s, last, inDay: day.length, nextT, ready: nextT <= now, slot: { dose: s.dose, unit: s.unit } };
+    const used = day.reduce((t, e) => t + amountOf(e, 1), 0);
+    if(max){
+      const u = amountOf(periodAt(r, Math.max(now, allowT)), 1);
+      let tot = used;
+      for(let i = 0; i < day.length && tot + u > max + 1e-9; i++){ tot -= amountOf(day[i], 1); allowT = Math.max(allowT, day[i].t + 864e5); }
+    }
+    const ready = allowT <= now;
+    const next = plannedFrom(r, Math.max(now, allowT))[0] || null;
+    const p = ready ? periodAt(r, now) : (next ? next.p : periodAt(r, allowT));
+    return { state:"prn", r, last, used, max, unit: r.unit, ready, allowT, p, usual: amountOf(p, 1),
+      nextT: next ? next.t : Math.max(now, allowT), slot: { dose: p.dose, unit: r.unit, sid: r.id, phase: p.key } };
+  }
+  function prnSummary(r){
+    return periodsOf(r).map(p => {
+      const pt = periodTimes(p);
+      return `${p.label} ${shortTime(toMin(p.start))}–${shortTime(toMin(p.end))}: ${fmtAmt(p.dose, r.unit)}, ${p.count}× every ${dur(p.gapH * 36e5)}`
+        + (pt ? ` (${pt.times.map(shortTime).join(", ")})` : "");
+    });
   }
 
-  function logDose(med, slot){
+  // Warn before logging something that would go over the 24-hour max.
+  function overMaxOk(med, dose){
+    const p = prnFor(med); if(!p || !p.max) return true;
+    const total = p.used + amountOf({ dose }, p.usual);
+    return total <= p.max + 1e-9 || confirm(`That would make ${fmtAmt(total, p.unit)} of ${med} in the last 24 hours, over your daily max of ${fmtAmt(p.max, p.unit)}. Log anyway?`);
+  }
+
+  function logDose(med, slot, amount){
+    const dose = amount ?? slot.dose;
+    if(!overMaxOk(med, dose)) return;
     const existing = medNames().find(n => sameMed(n, med));
-    entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
-      med: existing || med, dose: slot.dose, unit: slot.unit, t: Date.now(), note: "" });
-    persist(); toast(`Logged ${med}${fmtDose(slot) ? " " + fmtDose(slot) : ""}.`); renderAll();
+    const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+      med: existing || med, dose, unit: slot.unit, t: Date.now(), note: "", sid: slot.sid };
+    if(slot.phase) e.phase = slot.phase;
+    entries.push(e);
+    persist(); toast(`Logged ${med}${fmtDose(e) ? " " + fmtDose(e) : ""}.`); renderAll();
+  }
+
+  function stepperFor(start, step, most, unit, onChange){
+    let amt = start;
+    const box = document.createElement("div"); box.className = "amt";
+    const minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", "Less");
+    const val = document.createElement("span");
+    const plus = document.createElement("button"); plus.type = "button"; plus.textContent = "+"; plus.setAttribute("aria-label", "More");
+    const show = () => { val.textContent = fmtAmt(amt, unit); minus.disabled = amt - step < step - 1e-9; plus.disabled = amt + step > most + 1e-9; onChange(amt); };
+    minus.addEventListener("click", () => { amt = Math.max(step, amt - step); show(); });
+    plus.addEventListener("click", () => { amt = Math.min(most, amt + step); show(); });
+    show(); box.append(minus, val, plus);
+    return box;
   }
 
   function renderUpNext(){
@@ -615,10 +790,10 @@ h3{font-size:1rem;margin:14px 0 8px}
       box.appendChild(p); return;
     }
     const now = Date.now();
-    const rank = { overdue:0, upcoming:1, prn:2, done:3 };
+    const rank = { overdue:0, upcoming:1, prn:1, done:2 };
     const items = [
       ...medsWhere(s => !isPrn(s)).map(med => ({ med, st: statusFor(med) })),
-      ...medsWhere(isPrn).map(med => ({ med, st: prnFor(med) }))
+      ...medsWhere(s => isPrn(s) && s.day).map(med => ({ med, st: prnFor(med) }))
     ].filter(x => x.st).sort((a,b) => rank[a.st.state] - rank[b.st.state] || a.st.nextT - b.st.nextT);
 
     items.forEach(({ med, st }) => {
@@ -628,45 +803,51 @@ h3{font-size:1rem;margin:14px 0 8px}
       const info = document.createElement("div"); info.className = "info";
       const name = document.createElement("div"); name.className = "name";
       name.append(dot, " " + med + (fmtDose(st.slot) ? " " + fmtDose(st.slot) : ""));
-      if(prn){ const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "PRN"; name.appendChild(tag); }
+      if(prn){ const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "PRN " + (st.p.key === "night" ? "night" : "day"); name.appendChild(tag); }
 
       const when = document.createElement("div"); when.className = "when";
-      const big = document.createElement("div"); big.className = "big";
+      const big = document.createElement("div"); big.className = "big"; big.textContent = fmtTime(st.nextT);
       const rel = document.createElement("div");
       if(prn){
-        big.textContent = st.ready ? "Now" : fmtTime(st.nextT);
-        rel.className = "rel " + (st.ready ? "ready" : "prn");
-        rel.textContent = st.ready ? "if needed" : `in ${dur(st.nextT - now)}`;
+        rel.className = "rel prn";
+        rel.textContent = st.nextT - now < 60000 ? "now" : `in ${dur(st.nextT - now)}`;
       } else {
-        big.textContent = fmtTime(st.nextT);
         rel.className = "rel " + st.state;
         rel.textContent = st.state === "overdue" ? `overdue ${dur(now - st.nextT)}`
           : st.state === "upcoming" ? `in ${dur(st.nextT - now)}` : "tomorrow";
       }
       when.append(big, rel);
+      info.append(name);
 
-      const meta = document.createElement("div"); meta.className = "meta";
+      let amt = null;
       if(prn){
-        meta.textContent = (st.last ? `Last at ${whenLabel(st.last.t)}` : "None logged yet")
-          + (st.s.max ? `, ${st.inDay} of ${st.s.max} in the last 24 h` : `, at least ${dur(st.s.gapH * 36e5)} apart`);
+        const avail = document.createElement("div"); avail.className = "meta " + (st.ready ? "ok" : "");
+        avail.textContent = st.ready ? "Can take now if needed" : `Not before ${whenLabel(st.allowT)}`;
+        const meta = document.createElement("div"); meta.className = "meta";
+        meta.textContent = (st.last ? `Last at ${whenLabel(st.last.t)}${fmtDose(st.last) ? " (" + fmtDose(st.last) + ")" : ""}` : "None logged yet")
+          + (st.max ? `, ${+st.used.toFixed(2)} of ${fmtAmt(st.max, st.unit)} in the last 24 h` : "");
+        info.append(avail, meta);
+        const most = Number(st.r.maxPer) || 0;
+        if(most > st.usual){ amt = st.usual; info.appendChild(stepperFor(st.usual, Math.min(st.usual, 1), most, st.unit, v => { amt = v; })); }
       } else {
+        const meta = document.createElement("div"); meta.className = "meta";
         const bits = [`${st.k} of ${st.n} taken today`];
         if(st.missed) bits.push(`${st.missed} missed`);
         if(st.overdue > 1) bits.push(`${st.overdue} overdue`);
         if(st.last) bits.push(`last at ${fmtTime(st.last.t)}`);
         meta.textContent = bits.join(", ") + (st.state === "done" ? ". Done for today." : "");
+        info.append(meta);
       }
-      info.append(name, meta);
 
       const quiet = prn ? !st.ready : st.state === "done";
       const btn = document.createElement("button");
       btn.className = "logbtn" + (quiet ? " quiet" : "");
       btn.textContent = "Log now";
-      btn.setAttribute("aria-label", `Log ${med} ${fmtDose(st.slot)} now`);
+      btn.setAttribute("aria-label", `Log ${med} now`);
       btn.addEventListener("click", () => {
-        if(prn && !st.ready && !confirm(`Your next ${med} dose isn’t allowed until ${whenLabel(st.nextT)}. Log anyway?`)) return;
+        if(prn && !st.ready && !confirm(`Your next ${med} dose isn’t allowed until ${whenLabel(st.allowT)}. Log anyway?`)) return;
         if(!prn && st.state === "done" && !confirm(`You’ve finished today’s ${med} doses. Log another?`)) return;
-        logDose(med, st.slot);
+        logDose(med, st.slot, amt);
       });
       row.append(when, info, btn); box.appendChild(row);
     });
@@ -679,28 +860,33 @@ h3{font-size:1rem;margin:14px 0 8px}
       const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(med);
       const nm = document.createElement("span"); nm.className = "name"; nm.textContent = med;
       const nx = document.createElement("span"); nx.className = "small";
-      const st = statusFor(med), pr = prnFor(med);
-      if(st) nx.textContent = "Next: " + (st.state === "done" ? "tomorrow " : "") + fmtTime(st.nextT)
-        + (fmtDose(st.slot) ? ", " + fmtDose(st.slot) : "") + (st.state === "overdue" ? " (overdue)" : "");
-      else if(pr) nx.textContent = "Next: " + (pr.ready ? "now, if needed" : whenLabel(pr.nextT));
+      const st = statusFor(med), pr = prnFor(med), parts = [];
+      if(st) parts.push("Next: " + (st.state === "done" ? "tomorrow " : "") + fmtTime(st.nextT)
+        + (fmtDose(st.slot) ? ", " + fmtDose(st.slot) : "") + (st.state === "overdue" ? " (overdue)" : ""));
+      if(pr) parts.push("As needed: next planned " + whenLabel(pr.nextT) + (pr.ready ? ", can take now" : ""));
+      nx.textContent = parts.join(". ");
       head.append(dot, nm, nx); box.appendChild(head);
 
       schedules.filter(s => sameMed(s.med, med)).sort((a,b) => isPrn(a) - isPrn(b)).forEach(s => {
         const row = document.createElement("div"); row.className = "sched";
         const info = document.createElement("div"); info.className = "info";
         const t = document.createElement("div");
-        const small = document.createElement("div"); small.className = "small";
         let desc;
-        if(isPrn(s)){
-          t.textContent = `${fmtDose(s) || "Dose"}, as needed`;
-          desc = `At least ${dur(s.gapH * 36e5)} apart` + (s.max ? `, max ${s.max} per 24 h` : "");
-        } else {
+        if(isPrn(s) && s.day){
+          t.textContent = "As needed (PRN)";
+          const lines = prnSummary(s);
+          if(s.max) lines.push(`Daily max ${fmtAmt(s.max, s.unit)} per 24 h`);
+          if(Number(s.maxPer) > 0) lines.push(`Up to ${fmtAmt(s.maxPer, s.unit)} at a time`);
+          lines.forEach(l => { const d = document.createElement("div"); d.className = "small"; d.textContent = l; info.appendChild(d); });
+          desc = "as needed";
+          info.prepend(t);
+        } else if(!isPrn(s)){
           const p = plan(s.per, s.first, s.latest);
           t.textContent = `${fmtDose(s) || "Dose"}, ${s.per === 1 ? "once" : s.per + "×"} a day`;
           desc = p ? p.times.map(minLabel).join(", ") : "Check the times";
-        }
-        small.textContent = desc;
-        info.append(t, small);
+          const small = document.createElement("div"); small.className = "small"; small.textContent = desc;
+          info.append(t, small);
+        } else return;
         const edit = document.createElement("button"); edit.className = "edit"; edit.textContent = "Edit";
         edit.addEventListener("click", () => startEdit(s));
         const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
@@ -715,6 +901,7 @@ h3{font-size:1rem;margin:14px 0 8px}
     });
   }
 
+  /* Schedule form */
   function setMode(m){
     formMode = m;
     document.querySelectorAll("#sMode button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m ? "true" : "false"));
@@ -722,14 +909,65 @@ h3{font-size:1rem;margin:14px 0 8px}
   }
   document.querySelectorAll("#sMode button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
 
+  const P = ["Day", "Night"];
+  function readPrnForm(){
+    const get = (k, f) => $("p" + k + f).value;
+    const day = { start: get("Day","Start"), end: get("Day","End"), first: get("Day","First"),
+      dose: Number(get("Day","Dose")), count: Math.round(Number(get("Day","Count"))), gapH: Number(get("Day","Gap")) };
+    const night = { start: day.end, end: day.start, first: get("Night","First"),
+      dose: Number(get("Night","Dose")), count: Math.round(Number(get("Night","Count"))), gapH: Number(get("Night","Gap")) };
+    const maxRaw = $("sMax").value.trim(), mpRaw = $("sMaxPer").value.trim();
+    return { day, night, max: maxRaw === "" ? 0 : Number(maxRaw), maxPer: mpRaw === "" ? 0 : Number(mpRaw), scale: $("sScale").checked, unit: $("pDayUnit").value.trim() };
+  }
+  function fillPrnForm(r){
+    const set = (k, f, v) => { $("p" + k + f).value = v; };
+    set("Day","Start", r.day.start); set("Day","End", r.day.end); set("Night","Start", r.day.end); set("Night","End", r.day.start);
+    [["Day", r.day], ["Night", r.night]].forEach(([k, p]) => { set(k,"First", p.first); set(k,"Dose", p.dose); set(k,"Count", p.count); set(k,"Gap", p.gapH); });
+    $("sMax").value = r.max || ""; $("sMaxPer").value = r.maxPer || ""; $("sScale").checked = r.scale !== false;
+    $("pDayUnit").value = $("pNightUnit").value = r.unit || "tablet";
+  }
+  const PRN_DEFAULT = { day: { start:"07:00", end:"21:00", first:"07:00", dose:1, count:5, gapH:3 },
+                        night: { start:"21:00", end:"07:00", first:"21:00", dose:1, count:2, gapH:6 }, max:0, maxPer:0, scale:true, unit:"tablet" };
+  // One unit per medication: the daytime and nighttime unit fields mirror each other.
+  [["pDayUnit","pNightUnit"], ["pNightUnit","pDayUnit"]].forEach(([a, b]) =>
+    $(a).addEventListener("input", () => { $(b).value = $(a).value; $("sUnit").value = $(a).value; updatePreview(); }));
+  // Keep the two periods covering 24 hours: daytime end = nighttime start, nighttime end = daytime start.
+  [["pDayStart","pNightEnd"], ["pDayEnd","pNightStart"], ["pNightStart","pDayEnd"], ["pNightEnd","pDayStart"]].forEach(([a, b]) =>
+    $(a).addEventListener("input", () => { $(b).value = $(a).value; updatePreview(); }));
+
+  function prnProblems(r){
+    const msgs = [];
+    if(r.day.start === r.day.end) msgs.push("Daytime start and end can’t be the same time.");
+    periodsOf(r).forEach(p => {
+      if(!(p.dose > 0)) msgs.push(`${p.label}: enter a dose.`);
+      if(p.key === "day" && !r.unit) msgs.push("Enter a unit for the doses, like tablet or mg.");
+      if(!(p.count >= 1 && p.count <= 24)) msgs.push(`${p.label}: number of doses must be 1 to 24.`);
+      if(!(p.gapH > 0 && p.gapH <= 24)) msgs.push(`${p.label}: time between doses must be more than 0 and up to 24 hours.`);
+      if(isNaN(toMin(p.first))) msgs.push(`${p.label}: set the first dose time.`);
+    });
+    return msgs;
+  }
+
   function updatePreview(){
     const prn = formMode === "prn";
-    $("schedFields").hidden = prn; $("sPreviewWrap").hidden = prn; $("prnFields").hidden = !prn;
+    $("schedFields").hidden = prn; $("sPreviewWrap").hidden = prn; $("prnFields").hidden = !prn; $("sDoseRow").hidden = prn;
+    $("sWarn").textContent = scheduleWarning();
     if(prn){
-      const g = Number($("sGapH").value), mx = $("sMax").value.trim();
-      $("sGap").textContent = !(g > 0 && g <= 168) ? "Enter the minimum hours between doses."
-        : `Next dose allowed ${dur(g * 36e5)} after the last one` + (mx ? `, up to ${mx} in any 24 hours.` : ".")
-          + " Never shown as overdue or missed.";
+      const r = readPrnForm(), unit = r.unit;
+      const plural = unit ? unitFor(2, unit) : "";
+      $("sMaxLabel").textContent = "Daily max (24 h)" + (plural ? ", " + plural : "");
+      $("sMaxPerLabel").textContent = "Most per dose" + (plural ? ", " + plural : "");
+      periodsOf(r).forEach((p, i) => {
+        const k = P[i], box = $("p" + k + "Times"); box.replaceChildren();
+        const pt = periodTimes(p);
+        $("p" + k + "Note").textContent = !pt ? "" : pt.outside.length
+          ? `${pt.outside.map(shortTime).join(", ")} ${pt.outside.length === 1 ? "falls" : "fall"} outside ${p.label.toLowerCase()} hours.` : "";
+        if(pt) pt.times.forEach(m => { const s = document.createElement("span"); s.className = "time" + (pt.outside.includes(m) ? " out" : ""); s.textContent = shortTime(m); box.appendChild(s); });
+      });
+      const planned = periodsOf(r).reduce((t, p) => t + (p.dose > 0 && p.count > 0 ? p.dose * p.count : 0), 0);
+      $("sGap").textContent = `Planned: ${fmtAmt(planned, unit)} a day.`
+        + (r.max ? ` Daily max ${fmtAmt(r.max, unit)} in any 24 hours, counting every dose.` : "")
+        + " The times are a guide; as-needed doses are never shown as overdue or missed.";
       return;
     }
     const per = Math.round(Number($("sPer").value));
@@ -744,7 +982,43 @@ h3{font-size:1rem;margin:14px 0 8px}
     p.times.forEach(m => { const s = document.createElement("span"); s.className = "time"; s.textContent = minLabel(m); box.appendChild(s); });
     $("sGap").textContent = per === 1 ? "Once a day." : `About every ${dur(p.gap * 60000)}.`;
   }
-  ["sPer","sFirst","sLatest","sGapH","sMax"].forEach(id => $(id).addEventListener("input", updatePreview));
+  ["sMed","sPer","sFirst","sLatest","sMax","sMaxPer","sDose","sUnit",
+   ...P.flatMap(k => ["First","Dose","Count","Gap"].map(f => "p" + k + f))].forEach(id => $(id).addEventListener("input", updatePreview));
+  $("sScale").addEventListener("change", updatePreview);
+
+  // Compares what's being saved with the medication's other schedules and its daily max.
+  function scheduleWarning(){
+    const med = $("sMed").value.trim(); if(!med) return "";
+    const others = schedules.filter(x => x.id !== editingId && sameMed(x.med, med));
+    const otherPrn = others.find(x => isPrn(x) && x.day);
+    const timed = others.filter(x => !isPrn(x)).map(x => ({ per: Math.round(Number(x.per)), amt: amountOf(x, 1) }));
+    let prnPlan = null, max = 0, most = 0, unit = $("sUnit").value.trim();
+    if(formMode === "prn"){ prnPlan = readPrnForm(); max = prnPlan.max; most = prnPlan.maxPer; unit = prnPlan.unit; }
+    else {
+      timed.push({ per: Math.round(Number($("sPer").value)) || 0, amt: Number($("sDose").value) > 0 ? Number($("sDose").value) : 1 });
+      if(otherPrn){ prnPlan = otherPrn; max = Number(otherPrn.max) || 0; most = Number(otherPrn.maxPer) || 0; unit = otherPrn.unit || unit; }
+    }
+    const msgs = [];
+    if(formMode === "prn") msgs.push(...prnProblems(prnPlan));
+    const timedTotal = timed.reduce((t, x) => t + x.per * x.amt, 0);
+    const prnTotal = prnPlan ? periodsOf(prnPlan).reduce((t, p) => t + (p.dose > 0 && p.count > 0 ? p.dose * p.count : 0), 0) : 0;
+    const total = timedTotal + prnTotal;
+    if(max && total > max + 1e-9){
+      const parts = prnPlan ? periodsOf(prnPlan).map(p => `${p.label.toLowerCase()} ${fmtAmt(p.dose * p.count, unit)}`) : [];
+      if(timedTotal) parts.push(`timed ${fmtAmt(timedTotal, unit)}`);
+      msgs.push(`Planned doses add up to ${fmtAmt(total, unit)} a day (${parts.join(", ")}), over the daily max of ${fmtAmt(max, unit)}.`);
+    }
+    if(most){
+      const doses = timed.map(x => x.amt).concat(prnPlan ? periodsOf(prnPlan).map(p => p.dose) : []);
+      const big = Math.max(0, ...doses);
+      if(big > most + 1e-9) msgs.push(`A ${fmtAmt(big, unit)} dose is more than the most per dose (${fmtAmt(most, unit)}).`);
+    }
+    if(formMode === "prn" && prnPlan) periodsOf(prnPlan).forEach(p => {
+      const pt = periodTimes(p);
+      if(pt && pt.outside.length) msgs.push(`Some ${p.label.toLowerCase()} doses fall outside its hours.`);
+    });
+    return msgs.join(" ");
+  }
   $("sMed").addEventListener("change", () => {
     const last = lastFor($("sMed").value.trim());
     if(last && $("sDose").value === ""){ $("sDose").value = last.dose ?? ""; $("sUnit").value = last.unit || ""; }
@@ -752,9 +1026,9 @@ h3{font-size:1rem;margin:14px 0 8px}
 
   function startEdit(s){
     editingId = s.id;
-    $("sMed").value = s.med; $("sDose").value = s.dose ?? ""; $("sUnit").value = s.unit || "";
-    if(isPrn(s)){ $("sGapH").value = s.gapH; $("sMax").value = s.max || ""; }
-    else { $("sPer").value = s.per; $("sFirst").value = s.first; $("sLatest").value = s.latest || "22:00"; }
+    $("sMed").value = s.med; $("sUnit").value = s.unit || "";
+    if(isPrn(s)) fillPrnForm(s);
+    else { $("sDose").value = s.dose ?? ""; $("sPer").value = s.per; $("sFirst").value = s.first; $("sLatest").value = s.latest || "22:00"; }
     $("schedFormH").textContent = "Edit " + s.med; $("sCancel").hidden = false;
     $("nextCard").open = true; $("schedDetails").open = true;
     setMode(isPrn(s) ? "prn" : "sched");
@@ -763,31 +1037,36 @@ h3{font-size:1rem;margin:14px 0 8px}
   function resetForm(){
     editingId = null;
     $("sMed").value = ""; $("sPer").value = 2; $("sFirst").value = "08:00"; $("sLatest").value = "22:00";
-    $("sGapH").value = 4; $("sMax").value = ""; $("sDose").value = ""; $("sUnit").value = "mg";
+    $("sDose").value = ""; $("sUnit").value = "mg";
+    fillPrnForm(PRN_DEFAULT);
     $("schedFormH").textContent = "Add a schedule"; $("sCancel").hidden = true; setMode("sched");
   }
   $("sCancel").addEventListener("click", resetForm);
   $("sSave").addEventListener("click", () => {
     const medIn = $("sMed").value.trim();
     if(!medIn){ toast("Enter a medication name."); $("sMed").focus(); return; }
-    const doseRaw = $("sDose").value.trim();
-    const dose = doseRaw === "" ? "" : Number(doseRaw);
-    if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); return; }
     const med = medNames().find(n => sameMed(n, medIn)) || scheduledName(medIn) || medIn;
     let rec;
     if(formMode === "prn"){
-      const gapH = Number($("sGapH").value), mxRaw = $("sMax").value.trim(), max = mxRaw === "" ? 0 : Math.round(Number(mxRaw));
-      if(!(gapH > 0 && gapH <= 168)){ toast("Enter the minimum hours between doses."); return; }
-      if(mxRaw !== "" && !(max >= 1)){ toast("Max per 24 h must be 1 or more, or blank."); return; }
+      const r = readPrnForm();
+      const bad = prnProblems(r);
+      if(bad.length){ toast(bad[0]); return; }
+      if($("sMax").value.trim() !== "" && !(r.max > 0)){ toast("Daily max must be a number, or blank."); return; }
+      if($("sMaxPer").value.trim() !== "" && !(r.maxPer > 0)){ toast("Most per dose must be a number, or blank."); return; }
       const clash = schedules.find(x => isPrn(x) && sameMed(x.med, med) && x.id !== editingId);
-      if(clash && !confirm(`${med} already has an as-needed schedule. Replace it?`)) return;
+      if(clash && !confirm(`${med} already has an as-needed schedule. Replace it with this one?`)) return;
       schedules = schedules.filter(x => x !== clash);
-      rec = { med, mode:"prn", gapH, max, dose, unit: $("sUnit").value.trim() };
+      rec = { med, mode:"prn", ...r };
     } else {
+      const doseRaw = $("sDose").value.trim();
+      const dose = doseRaw === "" ? "" : Number(doseRaw);
+      if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); return; }
       const per = Math.round(Number($("sPer").value));
       if(!plan(per, $("sFirst").value, $("sLatest").value)){ toast("Check doses per day and the times."); return; }
       rec = { med, mode:"sched", per, first: $("sFirst").value, latest: $("sLatest").value, dose, unit: $("sUnit").value.trim() };
     }
+    const warn = scheduleWarning();
+    if(warn && !confirm(warn + " Save anyway?")) return;
     if(editingId) schedules = schedules.map(x => x.id === editingId ? { id: x.id, ...rec } : x);
     else schedules.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), ...rec });
     persistS(); toast("Schedule saved for " + med + "."); resetForm(); renderAll();
