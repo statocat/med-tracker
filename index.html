@@ -92,7 +92,11 @@ h3{font-size:1rem;margin:14px 0 8px}
 .times{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
 .time{background:var(--band);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:.92rem;font-variant-numeric:tabular-nums}
 .hint{font-size:.85rem;color:var(--muted);margin:0 0 12px}
-.sched{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.shead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:12px 0 4px;border-top:1px solid var(--line)}
+.shead:first-child{border-top:0;padding-top:0}
+.shead .name{font-weight:700}
+.shead .small{font-size:.85rem;color:var(--muted)}
+.sched{display:flex;align-items:center;gap:8px;padding:6px 0 6px 18px}
 .sched .info{flex:1;min-width:0}
 .sched .small{font-size:.85rem;color:var(--muted)}
 .edit{background:transparent;color:var(--accent);min-height:40px;padding:6px 10px;font-size:.9rem}
@@ -517,14 +521,26 @@ h3{font-size:1rem;margin:14px 0 8px}
     return [h ? h + " h" : "", r ? r + " min" : ""].filter(Boolean).join(" ");
   }
 
-  function statusFor(s){
-    const p = plan(s.per, s.first, s.latest); if(!p) return null;
+  // All of a medication's schedules merged into one day of dose slots.
+  function slotsFor(med){
+    return schedules.filter(s => sameMed(s.med, med)).flatMap(s => {
+      const p = plan(s.per, s.first, s.latest);
+      return p ? p.times.map(m => ({ m, dose: s.dose, unit: s.unit })) : [];
+    }).sort((a,b) => a.m - b.m);
+  }
+  function statusFor(med){
+    const slots = slotsFor(med); if(!slots.length) return null;
     const t0 = atMin(0, 0), now = Date.now();
-    const taken = entries.filter(e => sameMed(e.med, s.med) && e.t >= t0 && e.t <= now).sort((a,b) => a.t - b.t);
-    const k = taken.length, n = p.times.length, last = taken[k-1];
-    if(k >= n) return { state:"done", k, n, last, nextT: atMin(1, p.times[0]) };
-    const nextT = atMin(0, p.times[k]);
-    return { state: nextT <= now ? "overdue" : "upcoming", k, n, last, nextT };
+    const taken = entries.filter(e => sameMed(e.med, med) && e.t >= t0 && e.t <= now).sort((a,b) => a.t - b.t);
+    const k = taken.length, n = slots.length, last = taken[k-1];
+    if(k >= n) return { state:"done", k, n, last, slot: slots[0], nextT: atMin(1, slots[0].m) };
+    const nextT = atMin(0, slots[k].m);
+    return { state: nextT <= now ? "overdue" : "upcoming", k, n, last, slot: slots[k], nextT };
+  }
+  function scheduledMeds(){
+    const seen = new Map();
+    schedules.forEach(s => { const k = s.med.toLowerCase(); if(!seen.has(k)) seen.set(k, s.med); });
+    return [...seen.values()];
   }
 
   function renderUpNext(){
@@ -536,14 +552,14 @@ h3{font-size:1rem;margin:14px 0 8px}
     }
     const rank = { overdue:0, upcoming:1, done:2 };
     const now = Date.now();
-    schedules.map(s => ({ s, st: statusFor(s) })).filter(x => x.st)
+    scheduledMeds().map(med => ({ med, st: statusFor(med) })).filter(x => x.st)
       .sort((a,b) => rank[a.st.state] - rank[b.st.state] || a.st.nextT - b.st.nextT)
-      .forEach(({ s, st }) => {
+      .forEach(({ med, st }) => {
         const row = document.createElement("div"); row.className = "next";
-        const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(s.med);
+        const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(med);
         const info = document.createElement("div"); info.className = "info";
         const name = document.createElement("div"); name.className = "name";
-        name.textContent = s.med + (fmtDose(s) ? " " + fmtDose(s) : "");
+        name.textContent = med + (fmtDose(st.slot) ? " " + fmtDose(st.slot) : "");
         const when = document.createElement("div"); when.className = "when";
         const big = document.createElement("div"); big.className = "big"; big.textContent = fmtTime(st.nextT);
         const rel = document.createElement("div"); rel.className = "rel " + st.state;
@@ -558,13 +574,13 @@ h3{font-size:1rem;margin:14px 0 8px}
         const btn = document.createElement("button");
         btn.className = "logbtn" + (st.state === "done" ? " quiet" : "");
         btn.textContent = "Log now";
-        btn.setAttribute("aria-label", "Log " + s.med + " now");
+        btn.setAttribute("aria-label", `Log ${med} ${fmtDose(st.slot)} now`);
         btn.addEventListener("click", () => {
-          if(st.state === "done" && !confirm(`You’ve already logged all ${st.n} doses of ${s.med} today. Log another?`)) return;
-          const existing = medNames().find(n => sameMed(n, s.med));
+          if(st.state === "done" && !confirm(`You’ve already logged all ${st.n} doses of ${med} today. Log another?`)) return;
+          const existing = medNames().find(n => sameMed(n, med));
           entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
-            med: existing || s.med, dose: s.dose, unit: s.unit, t: Date.now(), note: "" });
-          persist(); toast("Logged " + s.med + "."); renderAll();
+            med: existing || med, dose: st.slot.dose, unit: st.slot.unit, t: Date.now(), note: "" });
+          persist(); toast(`Logged ${med}${fmtDose(st.slot) ? " " + fmtDose(st.slot) : ""}.`); renderAll();
         });
         row.append(when, info, btn); box.appendChild(row);
       });
@@ -572,29 +588,35 @@ h3{font-size:1rem;margin:14px 0 8px}
 
   function renderSchedList(){
     const box = $("schedList"); box.replaceChildren();
-    schedules.forEach(s => {
-      const p = plan(s.per, s.first, s.latest);
-      const row = document.createElement("div"); row.className = "sched";
-      const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(s.med);
-      const info = document.createElement("div"); info.className = "info";
-      const t = document.createElement("div"); t.textContent = `${s.med}${fmtDose(s) ? " " + fmtDose(s) : ""}, ${s.per}× a day`;
-      const small = document.createElement("div"); small.className = "small";
-      small.textContent = p ? p.times.map(minLabel).join(", ") : "Check the times";
-      const st = statusFor(s);
-      const nx = document.createElement("div"); nx.className = "small nx";
-      if(st) nx.textContent = "Next dose: " + (st.state === "done" ? "tomorrow " : "") + fmtTime(st.nextT)
-        + (st.state === "overdue" ? " (overdue)" : "");
-      info.append(t, small, nx);
-      const edit = document.createElement("button"); edit.className = "edit"; edit.textContent = "Edit";
-      edit.addEventListener("click", () => startEdit(s));
-      const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
-      del.addEventListener("click", () => {
-        if(!confirm(`Delete the schedule for ${s.med}? Your logged doses stay.`)) return;
-        schedules = schedules.filter(x => x.id !== s.id); persistS();
-        if(editingId === s.id) resetForm();
-        toast("Schedule deleted."); renderAll();
+    scheduledMeds().forEach(med => {
+      const head = document.createElement("div"); head.className = "shead";
+      const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(med);
+      const nm = document.createElement("span"); nm.className = "name"; nm.textContent = med;
+      const st = statusFor(med);
+      const nx = document.createElement("span"); nx.className = "small";
+      if(st) nx.textContent = "Next: " + (st.state === "done" ? "tomorrow " : "") + fmtTime(st.nextT)
+        + (fmtDose(st.slot) ? ", " + fmtDose(st.slot) : "") + (st.state === "overdue" ? " (overdue)" : "");
+      head.append(dot, nm, nx); box.appendChild(head);
+      schedules.filter(s => sameMed(s.med, med)).forEach(s => {
+        const p = plan(s.per, s.first, s.latest);
+        const row = document.createElement("div"); row.className = "sched";
+        const info = document.createElement("div"); info.className = "info";
+        const t = document.createElement("div");
+        t.textContent = `${fmtDose(s) || "Dose"}, ${s.per === 1 ? "once" : s.per + "×"} a day`;
+        const small = document.createElement("div"); small.className = "small";
+        small.textContent = p ? p.times.map(minLabel).join(", ") : "Check the times";
+        info.append(t, small);
+        const edit = document.createElement("button"); edit.className = "edit"; edit.textContent = "Edit";
+        edit.addEventListener("click", () => startEdit(s));
+        const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
+        del.addEventListener("click", () => {
+          if(!confirm(`Delete this ${med} schedule (${p ? p.times.map(minLabel).join(", ") : ""})? Your logged doses stay.`)) return;
+          schedules = schedules.filter(x => x.id !== s.id); persistS();
+          if(editingId === s.id) resetForm();
+          toast("Schedule deleted."); renderAll();
+        });
+        row.append(info, edit, del); box.appendChild(row);
       });
-      row.append(dot, info, edit, del); box.appendChild(row);
     });
   }
 
@@ -642,9 +664,6 @@ h3{font-size:1rem;margin:14px 0 8px}
     if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); return; }
     const med = medNames().find(n => sameMed(n, medIn)) || medIn;
     const rec = { med, per, first: $("sFirst").value, latest: $("sLatest").value, dose, unit: $("sUnit").value.trim() };
-    const clash = schedules.find(x => sameMed(x.med, med) && x.id !== editingId);
-    if(clash && !confirm(`${med} already has a schedule. Replace it?`)) return;
-    schedules = schedules.filter(x => x !== clash);
     if(editingId){ schedules = schedules.map(x => x.id === editingId ? { ...x, ...rec } : x); }
     else { schedules.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), ...rec }); }
     persistS(); toast("Schedule saved for " + med + "."); resetForm(); renderAll();
