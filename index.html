@@ -17,6 +17,7 @@
 :root{
   --bg:#eef2f2; --surface:#ffffff; --band:#f4f7f7; --ink:#18282c; --muted:#5b6b6f;
   --line:#d5dfdf; --accent:#1d6b66; --accent-ink:#ffffff; --danger:#b3261e;
+  --day-shade:rgba(240,180,60,.16); --night-shade:rgba(55,75,150,.14);
   color-scheme: light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
@@ -25,6 +26,7 @@
   :root{
     --bg:#0f1719; --surface:#182326; --band:#1d2a2d; --ink:#e6eeee; --muted:#9db0b2;
     --line:#2c3c40; --accent:#5cc2b8; --accent-ink:#06201e; --danger:#ff8a80;
+    --day-shade:rgba(240,180,60,.08); --night-shade:rgba(130,150,255,.13);
     color-scheme: dark;
   }
 }
@@ -116,6 +118,12 @@ fieldset.period{border:1px solid var(--line);border-radius:12px;padding:10px 12p
 fieldset.period legend{font-weight:700;padding:0 6px}
 .time.out{border-color:var(--danger);color:var(--danger)}
 .meta.ok{color:var(--accent);font-weight:700}
+.lgd{font-weight:400;color:var(--muted)}
+.legend{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted);margin-top:6px}
+.legend .sw{width:14px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+.legend .sw + *{margin-right:8px}
+.legend .sw.day{background:var(--day-shade)}
+.legend .sw.night{background:var(--night-shade);margin-left:10px}
 .check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.95rem;margin:22px 0 0;min-height:46px}
 .check input{width:22px;height:22px;min-height:0;flex:none;accent-color:var(--accent)}
 .amt{display:inline-flex;align-items:center;gap:6px;margin-top:6px}
@@ -138,6 +146,18 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     <div id="upNext" aria-live="polite"></div>
     <details id="schedDetails">
       <summary>Set up schedules</summary>
+      <fieldset class="period">
+        <legend>Day and night hours</legend>
+        <div class="row">
+          <div><label for="gDayStart">Daytime starts</label><input id="gDayStart" type="time"></div>
+          <div><label for="gDayEnd">Daytime ends</label><input id="gDayEnd" type="time"></div>
+        </div>
+        <div class="row">
+          <div><label for="gNightStart">Nighttime starts</label><input id="gNightStart" type="time"></div>
+          <div><label for="gNightEnd">Nighttime ends</label><input id="gNightEnd" type="time"></div>
+        </div>
+        <p class="hint">Used by every as-needed schedule and to shade the Dose Log. Together they always cover 24 hours.</p>
+      </fieldset>
       <div id="schedList"></div>
       <h3 id="schedFormH">Add a schedule</h3>
       <div class="full">
@@ -166,11 +186,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       </div>
       <div id="prnFields" hidden>
         <fieldset class="period">
-          <legend>Daytime</legend>
-          <div class="row">
-            <div><label for="pDayStart">Start time</label><input id="pDayStart" type="time" value="07:00"></div>
-            <div><label for="pDayEnd">End time</label><input id="pDayEnd" type="time" value="21:00"></div>
-          </div>
+          <legend>Daytime <span class="lgd" id="pDayHours"></span></legend>
           <div class="row">
             <div><label for="pDayDose">Dose</label><input id="pDayDose" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
             <div><label for="pDayUnit">Unit</label><input id="pDayUnit" list="unitList" autocomplete="off" value="tablet"></div>
@@ -186,11 +202,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
           <p class="hint warn" id="pDayNote"></p>
         </fieldset>
         <fieldset class="period">
-          <legend>Nighttime</legend>
-          <div class="row">
-            <div><label for="pNightStart">Start time</label><input id="pNightStart" type="time" value="21:00"></div>
-            <div><label for="pNightEnd">End time</label><input id="pNightEnd" type="time" value="07:00"></div>
-          </div>
+          <legend>Nighttime <span class="lgd" id="pNightHours"></span></legend>
           <div class="row">
             <div><label for="pNightDose">Dose</label><input id="pNightDose" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
             <div><label for="pNightUnit">Unit</label><input id="pNightUnit" list="unitList" autocomplete="off" value="tablet"></div>
@@ -205,7 +217,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
           <div class="times" id="pNightTimes"></div>
           <p class="hint warn" id="pNightNote"></p>
         </fieldset>
-        <p class="hint">Daytime and nighttime always cover the full 24 hours: changing one’s start or end moves the other’s. Both use the same unit, so the daily max adds up correctly.</p>
+        <p class="hint">Daytime and nighttime hours are set once for all medications, under Day and night hours above. Both periods use the same unit, so the daily max adds up correctly.</p>
         <div class="row">
           <div><label for="sMax" id="sMaxLabel">Daily max (24 h)</label><input id="sMax" type="number" inputmode="decimal" step="any" min="0" placeholder="No limit"></div>
           <div><label for="sMaxPer" id="sMaxPerLabel">Most per dose</label><input id="sMaxPer" type="number" inputmode="decimal" step="any" min="0" placeholder="Same as dose"></div>
@@ -269,14 +281,15 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   </details>
 
   <details class="card" id="chartCard" open>
-    <summary><h2 id="chartH">Doses over time</h2></summary>
+    <summary><h2 id="chartH">Dose Log</h2></summary>
     <div class="seg" role="group" aria-label="Time range">
       <button data-range="1">24 h</button>
       <button data-range="7" aria-pressed="true">7 days</button>
       <button data-range="30">30 days</button>
       <button data-range="all">All</button>
     </div>
-    <div id="chartWrap"><svg id="chart" role="img" aria-label="Scatter plot of doses by medication over time"></svg></div>
+    <div id="chartWrap"><svg id="chart" role="img" aria-label="Dose Log: scatter plot of doses by medication over time, shaded for daytime and nighttime"></svg></div>
+    <div class="legend" aria-hidden="true"><span class="sw day"></span>Daytime<span class="sw night"></span>Nighttime</div>
     <p id="detail" aria-live="polite"></p>
   </details>
 
@@ -417,15 +430,30 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       .sort((a,b)=>a.localeCompare(b));
 
     const W = Math.max($("chartWrap").clientWidth, 300);
-    const left = 96, right = 14, top = 8, laneH = 46, axisH = 30;
+    const left = 96, right = 14, top = 8, laneH = 46, axisH = 44;
     const lanes = Math.max(meds.length, 1);
     const H = top + lanes*laneH + axisH;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
     svg.setAttribute("width", W); svg.setAttribute("height", H);
     const xs = t => left + (t - x0) / (x1 - x0) * (W - left - right);
 
+    const span = x1 - x0, axisY = top + lanes*laneH;
+    const clampX = t => Math.min(Math.max(xs(t), left), W - right);
+
+    // daytime / nighttime shading
+    const dm = toMin(dayHours.start), nm = toMin(dayHours.end);
+    const base = new Date(x0); base.setHours(0,0,0,0);
+    const at = (i, m) => { const d = new Date(base); d.setDate(d.getDate() + i); d.setMinutes(m); return d.getTime(); };
+    const band = (a, b, fill) => { if(b <= x0 || a >= x1) return;
+      const xa = clampX(a), xb = clampX(b); if(xb - xa < 0.5) return;
+      svg.appendChild(svgEl("rect", { x: xa, y: top, width: xb - xa, height: axisY - top, fill })); };
+    for(let i = -1; at(i, dm) <= x1 && i < 4000; i++){
+      const ds = at(i, dm), de = at(i + (nm <= dm ? 1 : 0), nm), next = at(i + 1, dm);
+      band(ds, de, "var(--day-shade)"); band(de, next, "var(--night-shade)");
+    }
+
     if(!meds.length){
-      const tx = svgEl("text", {x: W/2, y: top + laneH/2 + 4, "text-anchor":"middle"});
+      const tx = svgEl("text", {x: (left + W - right)/2, y: top + laneH/2 + 4, "text-anchor":"middle"});
       tx.textContent = entries.length ? "No doses in this range." : "Log a dose to see it here.";
       svg.appendChild(tx);
     }
@@ -433,31 +461,30 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     // lanes
     meds.forEach((m, i) => {
       const y = top + i*laneH;
-      if(i % 2 === 0) svg.appendChild(svgEl("rect", {x:0, y, width:W, height:laneH, fill:"var(--band)", rx:6}));
+      if(i > 0) svg.appendChild(svgEl("line", {x1:0, x2:W-right, y1:y, y2:y, stroke:"var(--line)"}));
       const lab = svgEl("text", {x:8, y: y + laneH/2 + 4, class:"lane-label"});
       lab.textContent = m.length > 11 ? m.slice(0,10) + "…" : m;
       const ttl = svgEl("title", {}); ttl.textContent = m; lab.appendChild(ttl);
       svg.appendChild(lab);
     });
 
-    // ticks
-    const span = x1 - x0, axisY = top + lanes*laneH;
+    // ticks: time on the first line, date on the second, always
     svg.appendChild(svgEl("line", {x1:left, x2:W-right, y1:axisY, y2:axisY, stroke:"var(--line)"}));
-    let ticks = [];
-    if(span <= 1.6*864e5){
-      const d = new Date(x0); d.setMinutes(0,0,0); d.setHours(Math.ceil(d.getHours()/6)*6);
-      for(let t=d.getTime(); t<=x1; t+=6*36e5) ticks.push([t, new Date(t).toLocaleTimeString([], {hour:"numeric"})]);
-    } else {
-      const days = Math.max(1, Math.ceil(span/864e5/5));
-      const d = new Date(x0); d.setHours(0,0,0,0); d.setDate(d.getDate()+1);
-      for(; d.getTime()<=x1; d.setDate(d.getDate()+days))
-        ticks.push([d.getTime(), d.toLocaleDateString([], {month:"short", day:"numeric"})]);
+    const maxTicks = Math.max(3, Math.floor((W - left - right) / 46));
+    const stepH = [1,2,3,4,6,12,24,48,72,96,168,336,720].find(s => span / (s * 36e5) <= maxTicks) || 1440;
+    const ticks = [];
+    for(let i = 0; i < 5000; i++){
+      const d = new Date(base);
+      if(stepH >= 24) d.setDate(d.getDate() + i * stepH / 24); else d.setHours(i * stepH);
+      const t = d.getTime(); if(t > x1) break; if(t >= x0) ticks.push(t);
     }
-    ticks.forEach(([t, label]) => {
+    ticks.forEach(t => {
       const x = xs(t); if(x < left || x > W-right) return;
       svg.appendChild(svgEl("line", {x1:x, x2:x, y1:top, y2:axisY+4, stroke:"var(--line)", "stroke-dasharray":"2 4"}));
-      const tx = svgEl("text", {x, y: axisY + 19, "text-anchor":"middle"}); tx.textContent = label;
-      svg.appendChild(tx);
+      const d = new Date(t);
+      const t1 = svgEl("text", {x, y: axisY + 17, "text-anchor":"middle"}); t1.textContent = d.toLocaleTimeString([], {hour:"numeric"});
+      const t2 = svgEl("text", {x, y: axisY + 32, "text-anchor":"middle"}); t2.textContent = d.toLocaleDateString([], {month:"short", day:"numeric"});
+      svg.append(t1, t2);
     });
 
     // dots: size relative to that med's largest dose
@@ -624,6 +651,16 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     persistS(); persist();
   })();
 
+  // Daytime / nighttime hours, shared by every as-needed schedule and the Dose Log shading.
+  const DKEY = "medlog.dayhours.v1";
+  let dayHours = (() => {
+    try { const v = JSON.parse(localStorage.getItem(DKEY)); if(v && v.start && v.end) return v; } catch(e){}
+    const old = schedules.find(s => isPrn(s) && s.day && s.day.start && s.day.end);
+    const v = old ? { start: old.day.start, end: old.day.end } : { start: "07:00", end: "21:00" };
+    try { localStorage.setItem(DKEY, JSON.stringify(v)); } catch(e){}
+    return v;
+  })();
+
   // Evenly spaced doses: 24 h ÷ doses, but squeezed so the last one lands by the "no later than" time.
   function plan(per, first, latest){
     per = Math.round(Number(per));
@@ -691,8 +728,8 @@ fieldset.period legend{font-weight:700;padding:0 6px}
      are never overdue or missed. */
   function periodsOf(r){
     return [
-      { key:"day", label:"Daytime", ...r.day },
-      { key:"night", label:"Nighttime", ...r.night, start: r.day.end, end: r.day.start }
+      { key:"day", label:"Daytime", ...r.day, start: dayHours.start, end: dayHours.end },
+      { key:"night", label:"Nighttime", ...r.night, start: dayHours.end, end: dayHours.start }
     ];
   }
   const periodAt = (r, ts) => { const [d, n] = periodsOf(r); return inRange(minOf(ts), d.start, d.end) ? d : n; };
@@ -912,16 +949,15 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   const P = ["Day", "Night"];
   function readPrnForm(){
     const get = (k, f) => $("p" + k + f).value;
-    const day = { start: get("Day","Start"), end: get("Day","End"), first: get("Day","First"),
+    const day = { first: get("Day","First"),
       dose: Number(get("Day","Dose")), count: Math.round(Number(get("Day","Count"))), gapH: Number(get("Day","Gap")) };
-    const night = { start: day.end, end: day.start, first: get("Night","First"),
+    const night = { first: get("Night","First"),
       dose: Number(get("Night","Dose")), count: Math.round(Number(get("Night","Count"))), gapH: Number(get("Night","Gap")) };
     const maxRaw = $("sMax").value.trim(), mpRaw = $("sMaxPer").value.trim();
     return { day, night, max: maxRaw === "" ? 0 : Number(maxRaw), maxPer: mpRaw === "" ? 0 : Number(mpRaw), scale: $("sScale").checked, unit: $("pDayUnit").value.trim() };
   }
   function fillPrnForm(r){
     const set = (k, f, v) => { $("p" + k + f).value = v; };
-    set("Day","Start", r.day.start); set("Day","End", r.day.end); set("Night","Start", r.day.end); set("Night","End", r.day.start);
     [["Day", r.day], ["Night", r.night]].forEach(([k, p]) => { set(k,"First", p.first); set(k,"Dose", p.dose); set(k,"Count", p.count); set(k,"Gap", p.gapH); });
     $("sMax").value = r.max || ""; $("sMaxPer").value = r.maxPer || ""; $("sScale").checked = r.scale !== false;
     $("pDayUnit").value = $("pNightUnit").value = r.unit || "tablet";
@@ -931,13 +967,26 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   // One unit per medication: the daytime and nighttime unit fields mirror each other.
   [["pDayUnit","pNightUnit"], ["pNightUnit","pDayUnit"]].forEach(([a, b]) =>
     $(a).addEventListener("input", () => { $(b).value = $(a).value; $("sUnit").value = $(a).value; updatePreview(); }));
-  // Keep the two periods covering 24 hours: daytime end = nighttime start, nighttime end = daytime start.
-  [["pDayStart","pNightEnd"], ["pDayEnd","pNightStart"], ["pNightStart","pDayEnd"], ["pNightEnd","pDayStart"]].forEach(([a, b]) =>
-    $(a).addEventListener("input", () => { $(b).value = $(a).value; updatePreview(); }));
+  // Global hours: daytime end = nighttime start, nighttime end = daytime start, so they always cover 24 hours.
+  function fillDayHours(){
+    $("gDayStart").value = $("gNightEnd").value = dayHours.start;
+    $("gDayEnd").value = $("gNightStart").value = dayHours.end;
+  }
+  [["gDayStart","start"], ["gNightEnd","start"], ["gDayEnd","end"], ["gNightStart","end"]].forEach(([id, k]) =>
+    $(id).addEventListener("change", () => {
+      const v = $(id).value;
+      if(!v){ fillDayHours(); return; }
+      const next = { ...dayHours, [k]: v };
+      if(next.start === next.end){ toast("Daytime and nighttime can’t start at the same time."); fillDayHours(); return; }
+      dayHours = next; fillDayHours();
+      try { localStorage.setItem(DKEY, JSON.stringify(dayHours)); } catch(e){}
+      toast(`Daytime is now ${shortTime(toMin(dayHours.start))}–${shortTime(toMin(dayHours.end))}.`);
+      updatePreview(); renderAll();
+    }));
+  fillDayHours();
 
   function prnProblems(r){
     const msgs = [];
-    if(r.day.start === r.day.end) msgs.push("Daytime start and end can’t be the same time.");
     periodsOf(r).forEach(p => {
       if(!(p.dose > 0)) msgs.push(`${p.label}: enter a dose.`);
       if(p.key === "day" && !r.unit) msgs.push("Enter a unit for the doses, like tablet or mg.");
@@ -959,6 +1008,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       $("sMaxPerLabel").textContent = "Most per dose" + (plural ? ", " + plural : "");
       periodsOf(r).forEach((p, i) => {
         const k = P[i], box = $("p" + k + "Times"); box.replaceChildren();
+        $("p" + k + "Hours").textContent = `${shortTime(toMin(p.start))}–${shortTime(toMin(p.end))}`;
         const pt = periodTimes(p);
         $("p" + k + "Note").textContent = !pt ? "" : pt.outside.length
           ? `${pt.outside.map(shortTime).join(", ")} ${pt.outside.length === 1 ? "falls" : "fall"} outside ${p.label.toLowerCase()} hours.` : "";
