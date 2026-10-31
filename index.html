@@ -18,6 +18,7 @@
   --bg:#eef2f2; --surface:#ffffff; --band:#f4f7f7; --ink:#18282c; --muted:#5b6b6f;
   --line:#d5dfdf; --accent:#1d6b66; --accent-ink:#ffffff; --danger:#b3261e;
   --day-shade:rgba(240,180,60,.16); --night-shade:rgba(55,75,150,.14);
+  --shade-3:rgba(70,160,110,.15); --shade-4:rgba(160,90,200,.13); --shade-5:rgba(215,90,120,.13); --shade-6:rgba(50,150,200,.14);
   color-scheme: light;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
@@ -27,6 +28,7 @@
     --bg:#0f1719; --surface:#182326; --band:#1d2a2d; --ink:#e6eeee; --muted:#9db0b2;
     --line:#2c3c40; --accent:#5cc2b8; --accent-ink:#06201e; --danger:#ff8a80;
     --day-shade:rgba(240,180,60,.08); --night-shade:rgba(130,150,255,.13);
+    --shade-3:rgba(90,200,140,.10); --shade-4:rgba(190,130,240,.11); --shade-5:rgba(240,120,150,.10); --shade-6:rgba(90,190,240,.10);
     color-scheme: dark;
   }
 }
@@ -39,12 +41,26 @@ main{max-width:720px;margin:0 auto;padding:16px 16px 40px}
 h1{font-size:1.9rem;line-height:1.1;margin:8px 0 2px;letter-spacing:-.01em}
 .sub{color:var(--muted);margin:0 0 18px}
 h2{font-size:1.15rem;margin:0 0 10px}
+h3{font-size:1rem;margin:16px 0 8px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+.card > summary::-webkit-details-marker{display:none}
+.card > summary h2{margin:0}
+.card > summary::after{content:"";flex:none;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-5px 6px 0 0;transition:transform .15s}
+.card:not([open]) > summary::after{transform:rotate(-45deg);margin-top:0}
+.card[open] > summary{margin-bottom:10px}
+details.sub{border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:0 0 12px}
+details.sub > summary{cursor:pointer;color:var(--accent);font-weight:700;min-height:36px;display:flex;align-items:center}
+details.sub[open] > summary{margin-bottom:8px}
 label{display:block;font-size:.88rem;color:var(--muted);margin-bottom:4px}
 input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px}
+select{-webkit-appearance:none;appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:30px}
+input[type="search"]{-webkit-appearance:none;appearance:none}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.row > *{min-width:0}
 .full{margin-bottom:10px}
 button{font:inherit;border:0;border-radius:10px;padding:11px 16px;min-height:46px;cursor:pointer}
 .primary{background:var(--accent);color:var(--accent-ink);font-weight:700;width:100%}
@@ -52,10 +68,18 @@ button{font:inherit;border:0;border-radius:10px;padding:11px 16px;min-height:46p
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
 .chip{background:var(--band);color:var(--ink);border:1px solid var(--line);border-radius:999px;
   padding:6px 12px;min-height:36px;font-size:.92rem;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
 .dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
 .seg{display:flex;gap:6px;margin-bottom:10px}
-.seg button{flex:1;background:var(--band);color:var(--ink);border:1px solid var(--line);min-height:38px;padding:6px}
+.seg button{flex:1;background:var(--band);color:var(--ink);border:1px solid var(--line);min-height:38px;padding:6px 4px;font-size:.92rem}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.toolbar{margin-bottom:10px}
+.toolbar input[type="search"]{margin-bottom:8px}
+.count{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted);margin:-2px 0 8px}
+.count button{min-height:32px;padding:4px 10px;font-size:.85rem}
+.daychips{display:flex;gap:4px;margin:0 0 10px}
+.daychips button{flex:1;min-height:38px;padding:4px 0;background:var(--band);color:var(--ink);border:1px solid var(--line);font-size:.85rem}
+.daychips button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 #chartWrap{width:100%;overflow-x:auto}
 #chart text{fill:var(--muted);font-size:12px;font-family:inherit}
 #chart .lane-label{fill:var(--ink);font-size:13px;font-weight:700}
@@ -69,6 +93,7 @@ li.entry .what{flex:1;min-width:0}
 li.entry .when{color:var(--muted);font-size:.88rem}
 li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
 .del{background:transparent;color:var(--danger);min-height:40px;padding:6px 10px;font-size:.9rem}
+.edit{background:transparent;color:var(--accent);min-height:40px;padding:6px 10px;font-size:.9rem}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
 .tools button{flex:1}
 #backupBox{margin-top:10px;min-height:120px;font-size:.8rem;display:none}
@@ -80,58 +105,52 @@ li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
 .next .rel{font-size:.82rem;color:var(--muted)}
 .next .rel.overdue{color:var(--danger);font-weight:700}
 .next .rel.done{color:var(--accent)}
-.sched .nx{color:var(--ink)}
 .next .name{font-weight:700}
-.next .status{font-size:.95rem}
 .next .meta{font-size:.85rem;color:var(--muted)}
-.status.overdue{color:var(--danger);font-weight:700}
-.status.done{color:var(--accent)}
+.meta.ok{color:var(--accent);font-weight:700}
 .logbtn{background:var(--accent);color:var(--accent-ink);font-weight:700;padding:8px 14px;min-height:44px;flex:none}
 .logbtn.quiet{background:transparent;color:var(--accent);border:1px solid var(--line);font-weight:400}
-#schedDetails{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
-#schedDetails > summary{cursor:pointer;color:var(--accent);font-weight:700;min-height:36px;display:flex;align-items:center}
-h3{font-size:1rem;margin:14px 0 8px}
+.tag{font-size:.7rem;font-weight:700;letter-spacing:.04em;border:1px solid var(--line);border-radius:6px;padding:1px 5px;color:var(--muted);margin-left:6px;vertical-align:2px;white-space:nowrap}
 .times{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
 .time{background:var(--band);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:.92rem;font-variant-numeric:tabular-nums}
+.time.out{border-color:var(--danger);color:var(--danger)}
 .hint{font-size:.85rem;color:var(--muted);margin:0 0 12px}
-.shead{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:12px 0 4px;border-top:1px solid var(--line)}
+.hint:empty{display:none}
+.hint.warn{color:var(--danger);font-weight:700}
+.shead{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:12px 0 4px;border-top:1px solid var(--line)}
 .shead:first-child{border-top:0;padding-top:0}
 .shead .name{font-weight:700}
-.shead .small{font-size:.85rem;color:var(--muted)}
+.shead .small{font-size:.85rem;color:var(--muted);flex-basis:100%}
 .sched{display:flex;align-items:center;gap:8px;padding:6px 0 6px 18px}
 .sched .info{flex:1;min-width:0}
 .sched .small{font-size:.85rem;color:var(--muted)}
-.edit{background:transparent;color:var(--accent);min-height:40px;padding:6px 10px;font-size:.9rem}
-.card > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
-.card > summary::-webkit-details-marker{display:none}
-.card > summary h2{margin:0}
-.card > summary::after{content:"";flex:none;width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-5px 6px 0 0;transition:transform .15s}
-.card:not([open]) > summary::after{transform:rotate(-45deg);margin-top:0}
-.card[open] > summary{margin-bottom:10px}
-.tag{font-size:.7rem;font-weight:700;letter-spacing:.04em;border:1px solid var(--line);border-radius:6px;padding:1px 5px;color:var(--muted);margin-left:6px;vertical-align:2px}
-.rel.prn{color:var(--muted)}
-.rel.ready{color:var(--accent);font-weight:700}
-[hidden]{display:none !important}
-.hint.warn{color:var(--danger);font-weight:700}
-.hint.warn:empty{display:none}
 fieldset.period{border:1px solid var(--line);border-radius:12px;padding:10px 12px 4px;margin:0 0 12px;min-width:0}
 fieldset.period legend{font-weight:700;padding:0 6px}
-.time.out{border-color:var(--danger);color:var(--danger)}
-.meta.ok{color:var(--accent);font-weight:700}
 .lgd{font-weight:400;color:var(--muted)}
-.legend{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--muted);margin-top:6px}
-.legend .sw{width:14px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
-.legend .sw + *{margin-right:8px}
-.legend .sw.day{background:var(--day-shade)}
-.legend .sw.night{background:var(--night-shade);margin-left:10px}
-.check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.95rem;margin:22px 0 0;min-height:46px}
+.rangeRow{display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:6px;align-items:end;margin-bottom:8px}
+.rangeRow input{padding:8px;min-height:42px;font-size:.95rem}
+.rangeRow .sw{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid var(--line);margin-right:4px;vertical-align:-1px}
+.legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;font-size:.82rem;color:var(--muted);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{width:14px;height:10px;border-radius:3px;border:1px solid var(--line);display:inline-block}
+.check{display:flex;align-items:center;gap:8px;color:var(--ink);font-size:.95rem;margin:0 0 10px;min-height:46px}
 .check input{width:22px;height:22px;min-height:0;flex:none;accent-color:var(--accent)}
 .amt{display:inline-flex;align-items:center;gap:6px;margin-top:6px}
 .amt button{min-height:36px;width:36px;padding:0;background:var(--band);border:1px solid var(--line);color:var(--ink);font-size:1.15rem;border-radius:8px}
 .amt button:disabled{opacity:.4}
 .amt span{min-width:76px;text-align:center;font-weight:700;font-size:.92rem}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
-  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:50;padding:16px;
+  padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+#modal .box{background:var(--surface);color:var(--ink);border-radius:16px;padding:18px;max-width:520px;width:100%;max-height:85vh;overflow:auto}
+#modal h3{margin:0 0 6px;font-size:1.1rem}
+#modal p{margin:0 0 12px;color:var(--muted);font-size:.95rem}
+#modal .opt{display:block;width:100%;margin-bottom:8px;text-align:left}
+#modal .opt small{display:block;font-weight:400;opacity:.8;font-size:.82rem}
+.ex{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:.9rem}
+.ex div{flex:1;min-width:0}
+[hidden]{display:none !important}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 #toast.show{opacity:1}
 @media (prefers-reduced-motion: reduce){#toast,.card > summary::after{transition:none}}
 </style>
@@ -143,108 +162,16 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 
   <details class="card" id="nextCard" open>
     <summary><h2 id="nextH">Up next</h2></summary>
+    <div class="toolbar">
+      <input type="search" id="nSearch" placeholder="Search medications" aria-label="Search Up next" autocomplete="off">
+      <div class="seg" id="nFilter" role="group" aria-label="Show">
+        <button type="button" data-f="all" aria-pressed="true">All</button>
+        <button type="button" data-f="due" aria-pressed="false">Due now</button>
+        <button type="button" data-f="timed" aria-pressed="false">Timed</button>
+        <button type="button" data-f="prn" aria-pressed="false">As needed</button>
+      </div>
+    </div>
     <div id="upNext" aria-live="polite"></div>
-    <details id="schedDetails">
-      <summary>Set up schedules</summary>
-      <fieldset class="period">
-        <legend>Day and night hours</legend>
-        <div class="row">
-          <div><label for="gDayStart">Daytime starts</label><input id="gDayStart" type="time"></div>
-          <div><label for="gDayEnd">Daytime ends</label><input id="gDayEnd" type="time"></div>
-        </div>
-        <div class="row">
-          <div><label for="gNightStart">Nighttime starts</label><input id="gNightStart" type="time"></div>
-          <div><label for="gNightEnd">Nighttime ends</label><input id="gNightEnd" type="time"></div>
-        </div>
-        <p class="hint">Used by every as-needed schedule and to shade the Dose Log. Together they always cover 24 hours.</p>
-      </fieldset>
-      <div id="schedList"></div>
-      <h3 id="schedFormH">Add a schedule</h3>
-      <div class="full">
-        <label for="sMed">Medication</label>
-        <input id="sMed" list="medList" autocomplete="off" placeholder="e.g. Amoxicillin">
-      </div>
-      <div class="seg" id="sMode" role="group" aria-label="Schedule type">
-        <button type="button" data-mode="sched" aria-pressed="true">Set times</button>
-        <button type="button" data-mode="prn" aria-pressed="false">As needed (PRN)</button>
-      </div>
-      <div id="schedFields">
-        <div class="row">
-          <div>
-            <label for="sPer">Doses per day</label>
-            <input id="sPer" type="number" inputmode="numeric" min="1" max="12" step="1" value="2">
-          </div>
-          <div>
-            <label for="sFirst">First dose</label>
-            <input id="sFirst" type="time" value="08:00">
-          </div>
-        </div>
-        <div class="full" id="sLatestWrap">
-          <label for="sLatest">Last dose no later than</label>
-          <input id="sLatest" type="time" value="22:00">
-        </div>
-      </div>
-      <div id="prnFields" hidden>
-        <fieldset class="period">
-          <legend>Daytime <span class="lgd" id="pDayHours"></span></legend>
-          <div class="row">
-            <div><label for="pDayDose">Dose</label><input id="pDayDose" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
-            <div><label for="pDayUnit">Unit</label><input id="pDayUnit" list="unitList" autocomplete="off" value="tablet"></div>
-          </div>
-          <div class="row">
-            <div><label for="pDayCount">Number of doses</label><input id="pDayCount" type="number" inputmode="numeric" min="1" max="24" step="1" value="5"></div>
-            <div><label for="pDayGap">Hours between doses</label><input id="pDayGap" type="number" inputmode="decimal" step="any" min="0.25" value="3"></div>
-          </div>
-          <div class="row">
-            <div><label for="pDayFirst">First dose</label><input id="pDayFirst" type="time" value="07:00"></div>
-          </div>
-          <div class="times" id="pDayTimes"></div>
-          <p class="hint warn" id="pDayNote"></p>
-        </fieldset>
-        <fieldset class="period">
-          <legend>Nighttime <span class="lgd" id="pNightHours"></span></legend>
-          <div class="row">
-            <div><label for="pNightDose">Dose</label><input id="pNightDose" type="number" inputmode="decimal" step="any" min="0" value="1"></div>
-            <div><label for="pNightUnit">Unit</label><input id="pNightUnit" list="unitList" autocomplete="off" value="tablet"></div>
-          </div>
-          <div class="row">
-            <div><label for="pNightCount">Number of doses</label><input id="pNightCount" type="number" inputmode="numeric" min="1" max="24" step="1" value="2"></div>
-            <div><label for="pNightGap">Hours between doses</label><input id="pNightGap" type="number" inputmode="decimal" step="any" min="0.25" value="6"></div>
-          </div>
-          <div class="row">
-            <div><label for="pNightFirst">First dose</label><input id="pNightFirst" type="time" value="21:00"></div>
-          </div>
-          <div class="times" id="pNightTimes"></div>
-          <p class="hint warn" id="pNightNote"></p>
-        </fieldset>
-        <p class="hint">Daytime and nighttime hours are set once for all medications, under Day and night hours above. Both periods use the same unit, so the daily max adds up correctly.</p>
-        <div class="row">
-          <div><label for="sMax" id="sMaxLabel">Daily max (24 h)</label><input id="sMax" type="number" inputmode="decimal" step="any" min="0" placeholder="No limit"></div>
-          <div><label for="sMaxPer" id="sMaxPerLabel">Most per dose</label><input id="sMaxPer" type="number" inputmode="decimal" step="any" min="0" placeholder="Same as dose"></div>
-        </div>
-        <label class="check" style="margin-top:0"><input type="checkbox" id="sScale" checked> Wait longer after bigger doses</label>
-      </div>
-      <div class="row" id="sDoseRow">
-        <div id="sDoseWrap">
-          <label for="sDose">Dose</label>
-          <input id="sDose" type="number" inputmode="decimal" step="any" min="0" placeholder="500">
-        </div>
-        <div>
-          <label for="sUnit">Unit</label>
-          <input id="sUnit" list="unitList" autocomplete="off" value="mg">
-        </div>
-      </div>
-      <div id="sPreviewWrap">
-        <label>Dose times</label>
-        <div class="times" id="sPreview"></div>
-      </div>
-      <p class="hint" id="sGap"></p>
-      <p class="hint warn" id="sWarn" aria-live="polite"></p>
-      <div class="tools">
-        <button class="primary" id="sSave">Save schedule</button>
-        <button class="ghost" id="sCancel" hidden>Cancel</button>
-      </div>
-    </details>
   </details>
 
   <details class="card" id="logCard" open>
@@ -280,6 +207,92 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     <button class="primary" id="save">Log dose</button>
   </details>
 
+  <details class="card" id="schedCard" open>
+    <summary><h2 id="schedH">Schedules</h2></summary>
+    <div class="toolbar">
+      <input type="search" id="sSearch" placeholder="Search schedules" aria-label="Search schedules" autocomplete="off">
+    </div>
+    <div id="schedList"></div>
+
+    <details class="sub" id="rangesBox">
+      <summary>Time ranges</summary>
+      <p class="hint">Named parts of the day that as-needed schedules can use, and that shade the Dose Log. Daytime and Nighttime are the defaults; add your own, like Morning or Weekend day.</p>
+      <div id="rangeList"></div>
+      <button class="ghost" id="addRange" type="button" style="width:100%">Add time range</button>
+      <p class="hint" id="rangeHint" style="margin-top:10px"></p>
+    </details>
+
+    <h3 id="schedFormH">Add a schedule</h3>
+    <div class="full">
+      <label for="sMed">Medication</label>
+      <input id="sMed" list="medList" autocomplete="off" placeholder="e.g. Amoxicillin">
+    </div>
+    <label>Repeats</label>
+    <div class="seg" id="sRepeat" role="group" aria-label="Repeats">
+      <button type="button" data-rep="all" aria-pressed="true">Every day</button>
+      <button type="button" data-rep="weekdays" aria-pressed="false">Weekdays</button>
+      <button type="button" data-rep="weekends" aria-pressed="false">Weekends</button>
+      <button type="button" data-rep="custom" aria-pressed="false">Pick days</button>
+    </div>
+    <div class="daychips" id="sDays" role="group" aria-label="Days of the week" hidden></div>
+
+    <label>Type</label>
+    <div class="seg" id="sMode" role="group" aria-label="Schedule type">
+      <button type="button" data-mode="sched" aria-pressed="true">Set times</button>
+      <button type="button" data-mode="prn" aria-pressed="false">As needed (PRN)</button>
+    </div>
+
+    <div id="schedFields">
+      <div class="row">
+        <div>
+          <label for="sPer">Doses per day</label>
+          <input id="sPer" type="number" inputmode="numeric" min="1" max="12" step="1" value="2">
+        </div>
+        <div>
+          <label for="sFirst">First dose</label>
+          <input id="sFirst" type="time" value="08:00">
+        </div>
+      </div>
+      <div class="full" id="sLatestWrap">
+        <label for="sLatest">Last dose no later than</label>
+        <input id="sLatest" type="time" value="22:00">
+      </div>
+      <div class="row">
+        <div>
+          <label for="sDose">Dose</label>
+          <input id="sDose" type="number" inputmode="decimal" step="any" min="0" placeholder="500">
+        </div>
+        <div>
+          <label for="sUnit">Unit</label>
+          <input id="sUnit" list="unitList" autocomplete="off" value="mg">
+        </div>
+      </div>
+      <label>Dose times</label>
+      <div class="times" id="sPreview"></div>
+    </div>
+
+    <div id="prnFields" hidden>
+      <div id="blocks"></div>
+      <button class="ghost" id="addBlock" type="button" style="width:100%;margin-bottom:12px">Add another time range</button>
+      <label class="check"><input type="checkbox" id="sScale" checked> Wait longer after bigger doses</label>
+    </div>
+
+    <fieldset class="period">
+      <legend>Limits <span class="lgd" id="limitsFor">for this medication, across all its schedules</span></legend>
+      <div class="row">
+        <div><label for="sMax" id="sMaxLabel">Daily max (24 h)</label><input id="sMax" type="number" inputmode="decimal" step="any" min="0" placeholder="No limit"></div>
+        <div><label for="sMaxPer" id="sMaxPerLabel">Most per dose</label><input id="sMaxPer" type="number" inputmode="decimal" step="any" min="0" placeholder="No limit"></div>
+      </div>
+    </fieldset>
+
+    <p class="hint" id="sGap"></p>
+    <p class="hint warn" id="sWarn" aria-live="polite"></p>
+    <div class="tools">
+      <button class="primary" id="sSave">Save schedule</button>
+      <button class="ghost" id="sCancel" hidden>Cancel</button>
+    </div>
+  </details>
+
   <details class="card" id="chartCard" open>
     <summary><h2 id="chartH">Dose Log</h2></summary>
     <div class="seg" role="group" aria-label="Time range">
@@ -288,19 +301,39 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       <button data-range="30">30 days</button>
       <button data-range="all">All</button>
     </div>
-    <div id="chartWrap"><svg id="chart" role="img" aria-label="Dose Log: scatter plot of doses by medication over time, shaded for daytime and nighttime"></svg></div>
-    <div class="legend" aria-hidden="true"><span class="sw day"></span>Daytime<span class="sw night"></span>Nighttime</div>
+    <div class="chips" id="logMeds" role="group" aria-label="Medications to show"></div>
+    <div id="chartWrap"><svg id="chart" role="img" aria-label="Dose Log: scatter plot of doses by medication over time, shaded by time range"></svg></div>
+    <div class="legend" id="legend" aria-hidden="true"></div>
     <p id="detail" aria-live="polite"></p>
   </details>
 
   <details class="card" id="histCard" open>
     <summary><h2 id="histH">History</h2></summary>
+    <div class="toolbar">
+      <input type="search" id="hSearch" placeholder="Search medication, dose or note" aria-label="Search history" autocomplete="off">
+      <div class="row">
+        <div><label for="hMed">Medication</label><select id="hMed"></select></div>
+        <div><label for="hType">Type</label>
+          <select id="hType">
+            <option value="all">All doses</option>
+            <option value="sched">Timed schedule</option>
+            <option value="prn">As needed</option>
+            <option value="manual">Logged by hand</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div><label for="hFrom">From</label><input id="hFrom" type="date"></div>
+        <div><label for="hTo">To</label><input id="hTo" type="date"></div>
+      </div>
+    </div>
+    <div class="count"><span id="hCount"></span><button class="ghost" id="hClear" type="button" hidden>Clear filters</button></div>
     <div id="history"></div>
   </details>
 
   <details class="card" id="bkCard" open>
     <summary><h2 id="bkH">Backup</h2></summary>
-    <p class="empty" style="margin-top:0">Your log lives only on this device. Export now and then so you don’t lose it. The CSV holds your doses; schedules stay on this device.</p>
+    <p class="empty" style="margin-top:0">Your log lives only on this device. Export now and then so you don’t lose it. The CSV holds your doses; schedules and time ranges stay on this device.</p>
     <div class="tools">
       <button class="ghost" id="exportBtn">Export CSV</button>
       <button class="ghost" id="importBtn">Import CSV</button>
@@ -309,359 +342,195 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     <textarea id="backupBox" readonly aria-label="Backup text"></textarea>
   </details>
 </main>
+<div id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalH"><div class="box" id="modalBox"></div></div>
 <div id="toast" role="status"></div>
-
 <script>
 (function(){
-  const KEY = "medlog.v1";
+  /* ================= Basics ================= */
+  const KEY = "medlog.v1", SKEY = "medlog.schedules.v1", RKEY = "medlog.ranges.v1", MKEY = "medlog.meds.v1", UKEY = "medlog.ui.v1";
   const COLORS = ["#1d6b66","#c2410c","#6d28d9","#b45309","#0369a1","#be185d","#4d7c0f","#475569","#a16207","#0e7490"];
+  const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const $ = id => document.getElementById(id);
-  let entries = load();
-  let range = "7";
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const read = (k, fb) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; } catch(e){ return fb; } };
+  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e){ toast("Couldn’t save on this device. Export a backup."); return false; } };
 
-  function load(){
-    try { const raw = localStorage.getItem(KEY); const v = raw ? JSON.parse(raw) : []; return Array.isArray(v) ? v : []; }
-    catch(e){ return []; }
-  }
-  function persist(){
-    try { localStorage.setItem(KEY, JSON.stringify(entries)); }
-    catch(e){ toast("Couldn’t save on this device. Export a backup."); }
-  }
+  let entries = read(KEY, []); if(!Array.isArray(entries)) entries = [];
+  let schedules = read(SKEY, []); if(!Array.isArray(schedules)) schedules = [];
+  let ranges = read(RKEY, null);
+  let medSettings = read(MKEY, {}) || {};
+  let ui = read(UKEY, {}) || {};
+  let range = "7", editingId = null, formMode = "sched";
+
+  const persist = () => write(KEY, entries);
+  const persistS = () => write(SKEY, schedules);
+  const persistR = () => write(RKEY, ranges);
+  const persistM = () => write(MKEY, medSettings);
+  const persistUI = () => write(UKEY, ui);
+
   function toast(msg){
     const t = $("toast"); t.textContent = msg; t.classList.add("show");
-    clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove("show"), 2200);
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600);
   }
-  function pad(n){ return String(n).padStart(2,"0"); }
-  function localInput(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes()); }
-  function fmtTime(t){ return new Date(t).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); }
-  function fmtDay(t){ return new Date(t).toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"}); }
+  const pad = n => String(n).padStart(2,"0");
+  const localInput = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"T"+pad(d.getHours())+":"+pad(d.getMinutes());
+  const fmtTime = t => new Date(t).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+  const fmtDay = t => new Date(t).toLocaleDateString([], {weekday:"short", month:"short", day:"numeric"});
   function unitFor(n, unit){
     const u = unit || "";
     return Number(n) !== 1 && /^(tablet|capsule|pill|puff|drop|patch|spray|dose)$/i.test(u) ? u + "s" : u;
   }
-  function fmtDose(e){ return e.dose === "" || e.dose == null ? (e.unit || "") : (e.dose + " " + unitFor(e.dose, e.unit)).trim(); }
+  const fmtDose = e => e.dose === "" || e.dose == null ? (e.unit || "") : (e.dose + " " + unitFor(e.dose, e.unit)).trim();
+  const fmtAmt = (n, unit) => { const v = +Number(n).toFixed(2); return `${v}${unit ? " " + unitFor(v, unit) : ""}`; };
+  const toMin = s => { const p = String(s || "").split(":").map(Number); return p.length === 2 && !p.some(isNaN) ? p[0]*60 + p[1] : NaN; };
+  const sameMed = (a, b) => String(a).toLowerCase() === String(b).toLowerCase();
+  const isPrn = s => s.mode === "prn";
+  function amountOf(x, fallback){ const v = Number(x.dose); return x.dose !== "" && x.dose != null && v > 0 ? v : (fallback || 1); }
+  function shortTime(min){
+    min = ((min % 1440) + 1440) % 1440;
+    const d = new Date(); d.setHours(Math.floor(min / 60), min % 60, 0, 0);
+    return d.toLocaleTimeString([], min % 60 ? { hour:"numeric", minute:"2-digit" } : { hour:"numeric" });
+  }
+  function dur(ms){
+    const m = Math.round(Math.abs(ms) / 60000);
+    if(m < 1) return "under a minute";
+    const h = Math.floor(m / 60), r = m % 60;
+    return [h ? h + " h" : "", r ? r + " min" : ""].filter(Boolean).join(" ");
+  }
+  const dayStartTs = ts => { const d = new Date(ts); d.setHours(0,0,0,0); return d.getTime(); };
+  const addDaysTs = (ts, n) => { const d = new Date(ts); d.setDate(d.getDate() + n); return d.getTime(); };
+  const atDayMin = (dayTs, min) => { const d = new Date(dayTs); d.setHours(0, min, 0, 0); return d.getTime(); };
+  const atMin = (dayOffset, min) => atDayMin(addDaysTs(dayStartTs(Date.now()), dayOffset), min);
+  const minLabel = min => shortTime(min);
+  function whenLabel(t){ return t >= atMin(0, 0) && t < atMin(1, 0) ? fmtTime(t) : fmtDay(t) + " " + fmtTime(t); }
+  function relDay(t){
+    if(t >= atMin(1, 0) && t < atMin(2, 0)) return "tomorrow";
+    if(t >= atMin(0, 0) && t < atMin(1, 0)) return "today";
+    return DOW[new Date(t).getDay()];
+  }
+  const activeOn = (s, ts) => !s.days || !s.days.length || s.days.includes(new Date(ts).getDay());
+  function daysLabel(days){
+    if(!days || !days.length || days.length === 7) return "every day";
+    const k = days.slice().sort().join("");
+    if(k === "12345") return "weekdays";
+    if(k === "06") return "weekends";
+    return days.slice().sort((a,b) => ((a+6)%7) - ((b+6)%7)).map(d => DOW[d]).join(", ");
+  }
 
+  /* ================= Migrations ================= */
+  (function migrate(){
+    // Time ranges: start from the old global day/night hours, or the defaults.
+    if(!Array.isArray(ranges) || !ranges.length){
+      const dh = read("medlog.dayhours.v1", null);
+      const old = schedules.find(s => isPrn(s) && s.day && s.day.start && s.day.end);
+      const start = (dh && dh.start) || (old && old.day.start) || "07:00", end = (dh && dh.end) || (old && old.day.end) || "21:00";
+      ranges = [{ id:"day", name:"Daytime", start, end }, { id:"night", name:"Nighttime", start: end, end: start }];
+      persistR();
+    }
+    let changed = false;
+    const fit = (s, e, g) => { const span = ((toMin(e) - toMin(s)) + 1440) % 1440 || 1440; return Math.max(1, Math.min(24, Math.floor((span - 1) / (g * 60)) + 1)); };
+    // Oldest as-needed format: one schedule per window → daytime/nighttime blocks.
+    const legacy = schedules.filter(s => isPrn(s) && !s.day && !s.blocks);
+    const groups = new Map();
+    legacy.forEach(s => { const k = s.med.toLowerCase(); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(s); });
+    groups.forEach(list => {
+      const hasWin = s => s.from && s.to && s.from !== s.to;
+      const inWin = (m, s) => { const a = toMin(s.from), b = toMin(s.to); return a < b ? m >= a && m < b : m >= a || m < b; };
+      const dayS = list.find(s => !hasWin(s) || inWin(720, s)) || list[0];
+      const nightS = list.find(s => s !== dayS) || dayS;
+      const D = ranges.find(r => r.id === "day") || ranges[0], N = ranges.find(r => r.id === "night") || ranges[1] || ranges[0];
+      const maxes = list.map(s => Number(s.max) || 0).filter(Boolean);
+      const rec = { id: dayS.id, med: dayS.med, mode:"prn", unit: dayS.unit || "", scale: dayS.scale !== false, days: [],
+        max: maxes.length ? Math.min(...maxes) : 0, maxPer: Math.max(0, ...list.map(s => Number(s.maxPer) || 0)),
+        blocks: [
+          { rangeId: D.id, first: D.start, dose: amountOf(dayS, 1), gapH: Number(dayS.gapH) || 4, count: fit(D.start, D.end, Number(dayS.gapH) || 4) },
+          { rangeId: N.id, first: N.start, dose: amountOf(nightS, 1), gapH: Number(nightS.gapH) || 4, count: fit(N.start, N.end, Number(nightS.gapH) || 4) }
+        ] };
+      entries.forEach(e => { if(list.some(s => s.id === e.sid)) e.sid = rec.id; });
+      schedules = schedules.filter(s => !list.includes(s)).concat(rec);
+      changed = true;
+    });
+    // Day/night format → blocks.
+    schedules.forEach(s => {
+      if(isPrn(s) && s.day && !s.blocks){
+        s.blocks = [
+          { rangeId:"day", first: s.day.first, dose: Number(s.day.dose) || 1, count: Math.round(Number(s.day.count)) || 1, gapH: Number(s.day.gapH) || 4 },
+          { rangeId:"night", first: s.night.first, dose: Number(s.night.dose) || 1, count: Math.round(Number(s.night.count)) || 1, gapH: Number(s.night.gapH) || 4 }
+        ];
+        delete s.day; delete s.night; changed = true;
+      }
+      if(!Array.isArray(s.days)){ s.days = []; changed = true; }
+    });
+    // Limits now belong to the medication, across all its schedules.
+    schedules.forEach(s => {
+      if(s.max != null || s.maxPer != null){
+        const k = s.med.toLowerCase(), cur = medSettings[k] || {};
+        if(!cur.max && Number(s.max) > 0) cur.max = Number(s.max);
+        if(!cur.maxPer && Number(s.maxPer) > 0) cur.maxPer = Number(s.maxPer);
+        medSettings[k] = cur; delete s.max; delete s.maxPer; changed = true;
+      }
+    });
+    entries.forEach(e => { if(e.phase && !e.range){ e.range = e.phase; delete e.phase; changed = true; } });
+    if(changed){ persistS(); persistM(); persist(); }
+  })();
+
+  /* ================= Lookups ================= */
+  const schedById = id => schedules.find(x => x.id === id);
+  const rangeById = id => ranges.find(r => r.id === id);
+  const rangeSpan = r => ((toMin(r.end) - toMin(r.start)) + 1440) % 1440 || 1440;
+  const rangeHours = r => `${shortTime(toMin(r.start))}–${shortTime(toMin(r.end))}`;
+  const medSet = med => medSettings[String(med).toLowerCase()] || {};
+  function entryKind(e){
+    if(e.kind) return e.kind;
+    const s = e.sid && schedById(e.sid);
+    return s ? (isPrn(s) ? "prn" : "sched") : (e.range ? "prn" : "manual");
+  }
   function medNames(){
     const seen = new Map();
     entries.forEach(e => { const k = e.med.toLowerCase(); if(!seen.has(k)) seen.set(k, e.med); });
-    return [...seen.values()].sort((a,b)=>a.localeCompare(b));
+    schedules.forEach(s => { const k = s.med.toLowerCase(); if(!seen.has(k)) seen.set(k, s.med); });
+    return [...seen.values()].sort((a,b) => a.localeCompare(b));
   }
   function colorFor(name){
-    const names = medNames().map(n=>n.toLowerCase());
-    const i = names.indexOf(name.toLowerCase());
+    const i = medNames().map(n => n.toLowerCase()).indexOf(String(name).toLowerCase());
     return COLORS[(i < 0 ? 0 : i) % COLORS.length];
+  }
+  function shadeFor(r){
+    if(r.id === "day") return "var(--day-shade)";
+    if(r.id === "night") return "var(--night-shade)";
+    const others = ranges.filter(x => x.id !== "day" && x.id !== "night");
+    return `var(--shade-${3 + (others.indexOf(r) % 4)})`;
   }
   function lastFor(name){
     let best = null;
-    entries.forEach(e => { if(e.med.toLowerCase() === name.toLowerCase() && (!best || e.t > best.t)) best = e; });
+    entries.forEach(e => { if(sameMed(e.med, name) && (!best || e.t > best.t)) best = e; });
     return best;
   }
-
-  /* ---------- Quick picks ---------- */
-  function renderQuick(){
-    const box = $("quick"); box.replaceChildren();
-    const dl = $("medList"); dl.replaceChildren();
-    const names = medNames();
-    names.forEach(n => { const o = document.createElement("option"); o.value = n; dl.appendChild(o); });
-    const recent = names.map(n => lastFor(n)).sort((a,b)=>b.t-a.t).slice(0,6);
-    recent.forEach(e => {
-      const b = document.createElement("button");
-      b.className = "chip"; b.type = "button";
-      const d = document.createElement("span"); d.className = "dot"; d.style.background = colorFor(e.med);
-      b.append(d, document.createTextNode(e.med + (fmtDose(e) ? " " + fmtDose(e) : "")));
-      b.addEventListener("click", () => {
-        $("med").value = e.med; $("dose").value = e.dose ?? ""; $("unit").value = e.unit || "";
-        $("when").value = localInput(new Date());
-        $("save").focus();
-      });
-      box.appendChild(b);
-    });
-    box.style.display = recent.length ? "" : "none";
+  function medsWhere(pred){
+    const seen = new Map();
+    schedules.filter(pred).forEach(s => { const k = s.med.toLowerCase(); if(!seen.has(k)) seen.set(k, s.med); });
+    return [...seen.values()];
   }
-
-  /* ---------- Save ---------- */
-  $("save").addEventListener("click", () => {
-    const med = $("med").value.trim();
-    if(!med){ toast("Enter a medication name."); $("med").focus(); return; }
-    const doseRaw = $("dose").value.trim();
-    const dose = doseRaw === "" ? "" : Number(doseRaw);
-    if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); $("dose").focus(); return; }
-    const when = $("when").value ? new Date($("when").value) : new Date();
-    if(isNaN(when)){ toast("Check the date and time."); return; }
-    const existing = medNames().find(n => n.toLowerCase() === med.toLowerCase());
-    if(!overMaxOk(existing || med, dose)) return;
-    entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
-      med: existing || med, dose, unit: $("unit").value.trim(), t: when.getTime(), note: $("note").value.trim() });
-    persist();
-    $("note").value = ""; $("when").value = localInput(new Date());
-    toast("Logged " + (existing || med) + ".");
-    renderAll();
-  });
-
-  /* ---------- Chart ---------- */
-  document.querySelectorAll(".seg button[data-range]").forEach(b => b.addEventListener("click", () => {
-    range = b.dataset.range;
-    document.querySelectorAll(".seg button[data-range]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
-    $("detail").textContent = "";
-    renderChart();
-  }));
-
+  function usedIn24(med, usual){
+    const now = Date.now();
+    return entries.filter(e => sameMed(e.med, med) && e.t <= now && e.t > now - 864e5).reduce((t, e) => t + amountOf(e, usual || 1), 0);
+  }
+  // Warn before logging something that would go over the medication's daily max.
+  function overMaxOk(med, dose){
+    const max = Number(medSet(med).max) || 0; if(!max) return true;
+    const unit = (schedules.find(s => sameMed(s.med, med)) || lastFor(med) || {}).unit || "";
+    const total = usedIn24(med) + amountOf({ dose }, 1);
+    return total <= max + 1e-9 || confirm(`That would make ${fmtAmt(total, unit)} of ${med} in the last 24 hours, over the daily max of ${fmtAmt(max, unit)}. Log anyway?`);
+  }
   function svgEl(tag, attrs){
     const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
     for(const k in attrs) el.setAttribute(k, attrs[k]);
     return el;
   }
 
-  function renderChart(){
-    const svg = $("chart"); svg.replaceChildren();
-    const now = Date.now();
-    let x0, x1;
-    if(range === "all"){
-      if(!entries.length){ x0 = now - 7*864e5; x1 = now; }
-      else {
-        const ts = entries.map(e=>e.t);
-        x0 = Math.min(...ts); x1 = Math.max(...ts, now);
-        const padT = Math.max((x1-x0)*0.04, 36e5); x0 -= padT; x1 += padT;
-      }
-    } else { x1 = now + 36e5*0.5; x0 = now - Number(range)*864e5; }
-
-    const shown = entries.filter(e => e.t >= x0 && e.t <= x1);
-    const meds = [...new Set(shown.map(e => medNames().find(n=>n.toLowerCase()===e.med.toLowerCase()) || e.med))]
-      .sort((a,b)=>a.localeCompare(b));
-
-    const W = Math.max($("chartWrap").clientWidth, 300);
-    const left = 96, right = 14, top = 8, laneH = 46, axisH = 44;
-    const lanes = Math.max(meds.length, 1);
-    const H = top + lanes*laneH + axisH;
-    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.setAttribute("width", W); svg.setAttribute("height", H);
-    const xs = t => left + (t - x0) / (x1 - x0) * (W - left - right);
-
-    const span = x1 - x0, axisY = top + lanes*laneH;
-    const clampX = t => Math.min(Math.max(xs(t), left), W - right);
-
-    // daytime / nighttime shading
-    const dm = toMin(dayHours.start), nm = toMin(dayHours.end);
-    const base = new Date(x0); base.setHours(0,0,0,0);
-    const at = (i, m) => { const d = new Date(base); d.setDate(d.getDate() + i); d.setMinutes(m); return d.getTime(); };
-    const band = (a, b, fill) => { if(b <= x0 || a >= x1) return;
-      const xa = clampX(a), xb = clampX(b); if(xb - xa < 0.5) return;
-      svg.appendChild(svgEl("rect", { x: xa, y: top, width: xb - xa, height: axisY - top, fill })); };
-    for(let i = -1; at(i, dm) <= x1 && i < 4000; i++){
-      const ds = at(i, dm), de = at(i + (nm <= dm ? 1 : 0), nm), next = at(i + 1, dm);
-      band(ds, de, "var(--day-shade)"); band(de, next, "var(--night-shade)");
-    }
-
-    if(!meds.length){
-      const tx = svgEl("text", {x: (left + W - right)/2, y: top + laneH/2 + 4, "text-anchor":"middle"});
-      tx.textContent = entries.length ? "No doses in this range." : "Log a dose to see it here.";
-      svg.appendChild(tx);
-    }
-
-    // lanes
-    meds.forEach((m, i) => {
-      const y = top + i*laneH;
-      if(i > 0) svg.appendChild(svgEl("line", {x1:0, x2:W-right, y1:y, y2:y, stroke:"var(--line)"}));
-      const lab = svgEl("text", {x:8, y: y + laneH/2 + 4, class:"lane-label"});
-      lab.textContent = m.length > 11 ? m.slice(0,10) + "…" : m;
-      const ttl = svgEl("title", {}); ttl.textContent = m; lab.appendChild(ttl);
-      svg.appendChild(lab);
-    });
-
-    // ticks: time on the first line, date on the second, always
-    svg.appendChild(svgEl("line", {x1:left, x2:W-right, y1:axisY, y2:axisY, stroke:"var(--line)"}));
-    const maxTicks = Math.max(3, Math.floor((W - left - right) / 46));
-    const stepH = [1,2,3,4,6,12,24,48,72,96,168,336,720].find(s => span / (s * 36e5) <= maxTicks) || 1440;
-    const ticks = [];
-    for(let i = 0; i < 5000; i++){
-      const d = new Date(base);
-      if(stepH >= 24) d.setDate(d.getDate() + i * stepH / 24); else d.setHours(i * stepH);
-      const t = d.getTime(); if(t > x1) break; if(t >= x0) ticks.push(t);
-    }
-    ticks.forEach(t => {
-      const x = xs(t); if(x < left || x > W-right) return;
-      svg.appendChild(svgEl("line", {x1:x, x2:x, y1:top, y2:axisY+4, stroke:"var(--line)", "stroke-dasharray":"2 4"}));
-      const d = new Date(t);
-      const t1 = svgEl("text", {x, y: axisY + 17, "text-anchor":"middle"}); t1.textContent = d.toLocaleTimeString([], {hour:"numeric"});
-      const t2 = svgEl("text", {x, y: axisY + 32, "text-anchor":"middle"}); t2.textContent = d.toLocaleDateString([], {month:"short", day:"numeric"});
-      svg.append(t1, t2);
-    });
-
-    // dots: size relative to that med's largest dose
-    const maxDose = {};
-    shown.forEach(e => { const k = e.med.toLowerCase(); const v = Number(e.dose)||0; maxDose[k] = Math.max(maxDose[k]||0, v); });
-    shown.sort((a,b)=>a.t-b.t).forEach(e => {
-      const i = meds.findIndex(m => m.toLowerCase() === e.med.toLowerCase());
-      const cy = top + i*laneH + laneH/2, cx = xs(e.t);
-      const md = maxDose[e.med.toLowerCase()];
-      const r = md > 0 ? 3 + 3 * ((Number(e.dose)||0) / md) : 4.5;
-      const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": `${e.med} ${fmtDose(e)}, ${fmtDay(e.t)} ${fmtTime(e.t)}`, style:"cursor:pointer"});
-      g.appendChild(svgEl("circle", {cx, cy, r: 11, fill:"transparent"}));
-      g.appendChild(svgEl("circle", {cx, cy, r, fill: colorFor(e.med), "fill-opacity":"0.9", stroke:"var(--surface)", "stroke-width":"1"}));
-      const show = () => { $("detail").textContent = `${e.med}${fmtDose(e) ? " " + fmtDose(e) : ""}, taken ${fmtDay(e.t)} at ${fmtTime(e.t)}${e.note ? ". " + e.note : ""}`; };
-      g.addEventListener("click", show);
-      g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); show(); }});
-      svg.appendChild(g);
-    });
-  }
-
-  /* ---------- History ---------- */
-  function renderHistory(){
-    const box = $("history"); box.replaceChildren();
-    if(!entries.length){
-      const p = document.createElement("p"); p.className = "empty"; p.textContent = "No doses yet. Your first one will show up here.";
-      box.appendChild(p); return;
-    }
-    const sorted = [...entries].sort((a,b)=>b.t-a.t).slice(0, 200);
-    let lastDay = "", ul = null;
-    sorted.forEach(e => {
-      const day = fmtDay(e.t);
-      if(day !== lastDay){
-        const h = document.createElement("div"); h.className = "day"; h.textContent = day; box.appendChild(h);
-        ul = document.createElement("ul"); box.appendChild(ul); lastDay = day;
-      }
-      const li = document.createElement("li"); li.className = "entry";
-      const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(e.med);
-      const what = document.createElement("div"); what.className = "what";
-      const top = document.createElement("div"); top.textContent = e.med + (fmtDose(e) ? " " + fmtDose(e) : "");
-      const when = document.createElement("div"); when.className = "when"; const src = e.sid && schedules.find(x => x.id === e.sid);
-      when.textContent = fmtTime(e.t) + (src ? (src.mode === "prn" ? ", as needed" + (e.phase ? (e.phase === "night" ? " (night)" : " (day)") : "") : ", scheduled") : "");
-      what.append(top, when);
-      if(e.note){ const n = document.createElement("div"); n.className = "note"; n.textContent = e.note; what.appendChild(n); }
-      const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
-      del.setAttribute("aria-label", "Delete " + e.med + " at " + fmtTime(e.t));
-      del.addEventListener("click", () => {
-        if(!confirm(`Delete ${e.med} on ${day} at ${fmtTime(e.t)}?`)) return;
-        entries = entries.filter(x => x.id !== e.id); persist(); toast("Deleted."); renderAll();
-      });
-      li.append(dot, what, del); ul.appendChild(li);
-    });
-    if(entries.length > 200){
-      const p = document.createElement("p"); p.className = "empty"; p.textContent = "Showing the latest 200. Export for the full log.";
-      box.appendChild(p);
-    }
-  }
-
-  /* ---------- Backup ---------- */
-  function csvCell(v){ v = String(v ?? ""); return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }
-  function toCSV(){
-    const rows = [["taken_at","medication","dose","unit","note"]];
-    [...entries].sort((a,b)=>a.t-b.t).forEach(e => rows.push([localInput(new Date(e.t)), e.med, e.dose, e.unit, e.note]));
-    return rows.map(r => r.map(csvCell).join(",")).join("\n");
-  }
-  function parseCSV(text){
-    const rows = []; let row = [], cell = "", q = false;
-    for(let i=0;i<text.length;i++){
-      const c = text[i];
-      if(q){ if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
-      else if(c === '"') q = true;
-      else if(c === ","){ row.push(cell); cell = ""; }
-      else if(c === "\n" || c === "\r"){ if(c === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
-      else cell += c;
-    }
-    if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
-    return rows.filter(r => r.some(x => x.trim() !== ""));
-  }
-
-  $("exportBtn").addEventListener("click", async () => {
-    if(!entries.length){ toast("Nothing to export yet."); return; }
-    const csv = toCSV();
-    const name = "med-log-" + localInput(new Date()).slice(0,10) + ".csv";
-    try {
-      const file = new File([csv], name, {type:"text/csv"});
-      if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"Med Log backup"}); return; }
-    } catch(e){ if(e && e.name === "AbortError") return; }
-    try {
-      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-      a.download = name; document.body.appendChild(a); a.click(); a.remove();
-    } catch(e){}
-    const box = $("backupBox"); box.style.display = "block"; box.value = csv;
-    box.focus(); box.select();
-  });
-
-  $("importBtn").addEventListener("click", () => $("fileIn").click());
-  $("fileIn").addEventListener("change", async ev => {
-    const f = ev.target.files[0]; ev.target.value = ""; if(!f) return;
-    const rows = parseCSV(await f.text());
-    if(!rows.length || rows[0][0].trim().toLowerCase() !== "taken_at"){ toast("That file isn’t a Med Log export."); return; }
-    const have = new Set(entries.map(e => e.t + "|" + e.med.toLowerCase() + "|" + e.dose));
-    let added = 0;
-    rows.slice(1).forEach(r => {
-      const d = new Date(r[0]); if(isNaN(d) || !r[1]) return;
-      const dose = r[2] === "" || r[2] == null ? "" : Number(r[2]);
-      const e = { id: Date.now().toString(36)+Math.random().toString(36).slice(2,7), t: d.getTime(), med: r[1].trim(), dose, unit: (r[3]||"").trim(), note: (r[4]||"").trim() };
-      const k = e.t + "|" + e.med.toLowerCase() + "|" + e.dose;
-      if(!have.has(k)){ entries.push(e); have.add(k); added++; }
-    });
-    persist(); renderAll();
-    toast(added ? `Imported ${added} dose${added === 1 ? "" : "s"}.` : "No new doses in that file.");
-  });
-
-  /* ---------- Schedules ---------- */
-  const SKEY = "medlog.schedules.v1";
-  let schedules = (() => {
-    try { const r = localStorage.getItem(SKEY); const v = r ? JSON.parse(r) : []; return Array.isArray(v) ? v : []; }
-    catch(e){ return []; }
-  })();
-  let editingId = null, formMode = "sched";
-  function persistS(){
-    try { localStorage.setItem(SKEY, JSON.stringify(schedules)); }
-    catch(e){ toast("Couldn’t save the schedule on this device."); }
-  }
-  const sameMed = (a, b) => a.toLowerCase() === b.toLowerCase();
-  const isPrn = s => s.mode === "prn";
-  const toMin = s => { const p = String(s || "").split(":").map(Number); return p.length === 2 && !p.some(isNaN) ? p[0]*60 + p[1] : NaN; };
+  /* ================= Timed schedules ================= */
   const GRACE = 60 * 60000; // a dose taken up to an hour early counts for that time
-  const schedById = id => schedules.find(x => x.id === id);
-  const prnRec = med => schedules.find(x => isPrn(x) && x.day && sameMed(x.med, med));
-  // Numeric amount of a dose or schedule (e.g. 2 tablets → 2); falls back when no number was entered.
-  function amountOf(x, fallback){ const v = Number(x.dose); return x.dose !== "" && x.dose != null && v > 0 ? v : (fallback || 1); }
-  function fmtAmt(n, unit){ const v = +Number(n).toFixed(2); return `${v}${unit ? " " + unitFor(v, unit) : ""}`; }
-  function inRange(min, start, end){
-    const s = toMin(start), e = toMin(end);
-    if(isNaN(s) || isNaN(e) || s === e) return true;
-    return s < e ? (min >= s && min < e) : (min >= s || min < e);
-  }
-  const minOf = ts => { const d = new Date(ts); return d.getHours() * 60 + d.getMinutes(); };
-  function shortTime(min){
-    const d = new Date(); d.setHours(Math.floor(min / 60), min % 60, 0, 0);
-    return d.toLocaleTimeString([], min % 60 ? { hour:"numeric", minute:"2-digit" } : { hour:"numeric" });
-  }
-
-  // Older as-needed schedules (one per time window) become a single daytime + nighttime schedule.
-  (function migrate(){
-    const legacy = schedules.filter(s => isPrn(s) && !s.day);
-    if(!legacy.length) return;
-    const fit = (s, e, g) => { const span = ((toMin(e) - toMin(s)) + 1440) % 1440 || 1440; return Math.max(1, Math.min(24, Math.floor((span - 1) / (g * 60)) + 1)); };
-    const groups = new Map();
-    legacy.forEach(s => { const k = s.med.toLowerCase(); if(!groups.has(k)) groups.set(k, []); groups.get(k).push(s); });
-    groups.forEach(list => {
-      const hasWin = s => s.from && s.to && s.from !== s.to;
-      const dayS = list.find(s => !hasWin(s) || inRange(720, s.from, s.to)) || list[0];
-      const nightS = list.find(s => s !== dayS) || dayS;
-      const start = hasWin(dayS) ? dayS.from : "07:00", end = hasWin(dayS) ? dayS.to : "21:00";
-      const maxes = list.map(s => Number(s.max) || 0).filter(Boolean);
-      const rec = { id: dayS.id, med: dayS.med, mode: "prn", unit: dayS.unit || "",
-        max: maxes.length ? Math.min(...maxes) : 0, maxPer: Math.max(0, ...list.map(s => Number(s.maxPer) || 0)), scale: dayS.scale !== false,
-        day: { start, end, first: start, dose: amountOf(dayS, 1), gapH: Number(dayS.gapH) || 4, count: fit(start, end, Number(dayS.gapH) || 4) },
-        night: { start: end, end: start, first: end, dose: amountOf(nightS, 1), gapH: Number(nightS.gapH) || 4, count: fit(end, start, Number(nightS.gapH) || 4) } };
-      entries.forEach(e => { if(list.some(s => s.id === e.sid)) e.sid = rec.id; });
-      schedules = schedules.filter(s => !list.includes(s)).concat(rec);
-    });
-    persistS(); persist();
-  })();
-
-  // Daytime / nighttime hours, shared by every as-needed schedule and the Dose Log shading.
-  const DKEY = "medlog.dayhours.v1";
-  let dayHours = (() => {
-    try { const v = JSON.parse(localStorage.getItem(DKEY)); if(v && v.start && v.end) return v; } catch(e){}
-    const old = schedules.find(s => isPrn(s) && s.day && s.day.start && s.day.end);
-    const v = old ? { start: old.day.start, end: old.day.end } : { start: "07:00", end: "21:00" };
-    try { localStorage.setItem(DKEY, JSON.stringify(v)); } catch(e){}
-    return v;
-  })();
-
-  // Evenly spaced doses: 24 h ÷ doses, but squeezed so the last one lands by the "no later than" time.
+  // Evenly spaced doses: 24 h ÷ doses, squeezed so the last one lands by the "no later than" time.
   function plan(per, first, latest){
     per = Math.round(Number(per));
     const f = toMin(first);
@@ -674,137 +543,122 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     for(let i = 0; i < per; i++) times.push(Math.min(Math.round((f + i*gap) / 5) * 5, i === per-1 ? l : 1439));
     return { times, gap };
   }
-  function atMin(dayOffset, min){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + dayOffset); d.setMinutes(min); return d.getTime(); }
-  function minLabel(min){ return fmtTime(atMin(0, min)); }
-  function whenLabel(t){ return t >= atMin(0, 0) && t < atMin(1, 0) ? fmtTime(t) : fmtDay(t) + " " + fmtTime(t); }
-  function dur(ms){
-    const m = Math.round(Math.abs(ms) / 60000);
-    if(m < 1) return "under a minute";
-    const h = Math.floor(m / 60), r = m % 60;
-    return [h ? h + " h" : "", r ? r + " min" : ""].filter(Boolean).join(" ");
-  }
-  function medsWhere(pred){
-    const seen = new Map();
-    schedules.filter(pred).forEach(s => { const k = s.med.toLowerCase(); if(!seen.has(k)) seen.set(k, s.med); });
-    return [...seen.values()];
-  }
-
-  /* Timed schedules */
-  function slotsFor(med){
-    return schedules.filter(s => !isPrn(s) && sameMed(s.med, med)).flatMap(s => {
+  const timedScheds = med => schedules.filter(s => !isPrn(s) && sameMed(s.med, med));
+  function slotsOn(med, dayTs){
+    return timedScheds(med).filter(s => activeOn(s, dayTs)).flatMap(s => {
       const p = plan(s.per, s.first, s.latest);
-      return p ? p.times.map(m => ({ m, t: atMin(0, m), dose: s.dose, unit: s.unit, sid: s.id })) : [];
-    }).sort((a,b) => a.m - b.m);
+      return p ? p.times.map(m => ({ m, t: atDayMin(dayTs, m), dose: s.dose, unit: s.unit, sid: s.id, kind:"sched" })) : [];
+    }).sort((a,b) => a.t - b.t);
+  }
+  function nextDaySlot(med, dayTs){
+    for(let i = 1; i <= 7; i++){ const sl = slotsOn(med, addDaysTs(dayTs, i)); if(sl.length) return sl[0]; }
+    return null;
   }
   function statusFor(med){
-    const slots = slotsFor(med); if(!slots.length) return null;
-    const now = Date.now();
-    const taken = entries.filter(e => {
-      if(!sameMed(e.med, med) || e.t < atMin(0, 0) || e.t > now) return false;
-      const src = e.sid && schedById(e.sid);
-      return !(src && isPrn(src)); // as-needed doses never count toward scheduled times
-    }).sort((a,b) => a.t - b.t);
-    // Each dose covers the latest open slot it's due for; open slots it skips over become missed, not overdue.
+    if(!timedScheds(med).length) return null;
+    const now = Date.now(), today = dayStartTs(now);
+    const slots = slotsOn(med, today);
+    if(!slots.length){ const nx = nextDaySlot(med, today); return nx ? { state:"off", k:0, n:0, missed:0, slot: nx, nextT: nx.t } : null; }
+    const taken = entries.filter(e => sameMed(e.med, med) && e.t >= today && e.t <= now && entryKind(e) !== "prn").sort((a,b) => a.t - b.t);
+    // Each dose covers the latest open time it's due for; open times it skips over become missed, not overdue.
     let ptr = 0; const counted = [];
     taken.forEach(e => {
       if(ptr >= slots.length) return;
       let j = -1;
       for(let i = ptr; i < slots.length; i++) if(slots[i].t <= e.t + GRACE) j = i;
-      if(j < 0){ if(!e.sid) return; j = ptr; }
+      if(j < 0){ if(!e.sid) return; j = ptr; } // hand-logged doses long before the next time don't count
       for(let i = ptr; i < j; i++) slots[i].missed = true;
       slots[j].taken = true; ptr = j + 1; counted.push(e);
     });
     const n = slots.length, last = counted[counted.length - 1];
     const k = slots.filter(s => s.taken).length, missed = slots.filter(s => s.missed).length;
     const rest = slots.slice(ptr);
-    if(!rest.length) return { state:"done", k, n, missed, last, slot: slots[0], nextT: atMin(1, slots[0].m) };
+    if(!rest.length){ const nx = nextDaySlot(med, today) || slots[0]; return { state:"done", k, n, missed, last, slot: nx, nextT: nx.t }; }
     const due = rest.filter(s => s.t <= now);
     if(due.length){ const s = due[due.length - 1]; return { state:"overdue", k, n, missed, overdue: due.length, last, slot: s, nextT: s.t }; }
     return { state:"upcoming", k, n, missed, last, slot: rest[0], nextT: rest[0].t };
   }
 
-  /* As-needed (PRN): a daytime and a nighttime period that together cover 24 hours, each with its own
-     dose, number of doses, time between doses and first dose. The planned times are a guide; doses
-     are never overdue or missed. */
-  function periodsOf(r){
-    return [
-      { key:"day", label:"Daytime", ...r.day, start: dayHours.start, end: dayHours.end },
-      { key:"night", label:"Nighttime", ...r.night, start: dayHours.end, end: dayHours.start }
-    ];
-  }
-  const periodAt = (r, ts) => { const [d, n] = periodsOf(r); return inRange(minOf(ts), d.start, d.end) ? d : n; };
-  // Planned dose times for a period, plus any that fall outside its hours.
-  function periodTimes(p){
-    const s = toMin(p.start), e = toMin(p.end), f = toMin(p.first), n = Math.round(Number(p.count)), g = Number(p.gapH);
-    if([s, e, f].some(isNaN) || !(n >= 1 && n <= 24) || !(g > 0 && g <= 24)) return null;
-    const span = ((e - s) + 1440) % 1440 || 1440;
-    const times = [], outside = [];
-    for(let i = 0; i < n; i++){
-      const off = Math.round((f + i * g * 60) / 5) * 5, m = ((off % 1440) + 1440) % 1440;
-      times.push(m);
-      if((((off - s) % 1440) + 1440) % 1440 >= span || off - f >= 1440) outside.push(m);
-    }
-    return { times, outside };
-  }
-  function plannedFrom(r, fromT){
+  /* ================= As-needed (PRN) schedules =================
+     Each PRN schedule has one block per time range (dose, number of doses, hours between doses, first
+     dose). Planned times are a guide; as-needed doses are never overdue or missed. */
+  const prnScheds = med => schedules.filter(s => isPrn(s) && sameMed(s.med, med));
+  function blocksOnDay(med, dayTs){
     const out = [];
-    periodsOf(r).forEach(p => {
-      const pt = periodTimes(p); if(!pt) return;
-      pt.times.forEach(m => { for(let d = -1; d <= 2; d++) out.push({ t: atMin(d, m), p }); });
-    });
-    return out.filter(x => x.t >= fromT).sort((a,b) => a.t - b.t);
+    prnScheds(med).filter(s => activeOn(s, dayTs)).forEach(s => (s.blocks || []).forEach(b => {
+      const r = b.rangeId ? rangeById(b.rangeId) : null;
+      const win = r ? [atDayMin(dayTs, toMin(r.start)), atDayMin(dayTs, toMin(r.start) + rangeSpan(r))] : [dayTs, addDaysTs(dayTs, 1)];
+      out.push({ s, b, r, win, dayTs });
+    }));
+    return out;
+  }
+  function blockOffsets(b){ // minutes from the start of its day
+    const f = toMin(b.first), n = Math.round(Number(b.count)), g = Number(b.gapH);
+    if(isNaN(f) || !(n >= 1 && n <= 24) || !(g > 0 && g <= 24)) return [];
+    const out = []; for(let i = 0; i < n; i++) out.push(Math.round((f + i * g * 60) / 5) * 5);
+    return out;
+  }
+  const strictness = b => Number(b.gapH) / amountOf(b, 1);
+  // The block whose rules apply at a moment (the strictest if several do).
+  function ruleAt(med, ts){
+    const d0 = dayStartTs(ts);
+    const here = [...blocksOnDay(med, d0), ...blocksOnDay(med, addDaysTs(d0, -1))].filter(x => ts >= x.win[0] && ts < x.win[1]);
+    const pool = here.length ? here : prnScheds(med).flatMap(s => (s.blocks || []).map(b => ({ s, b, r: b.rangeId ? rangeById(b.rangeId) : null })));
+    if(!pool.length) return null;
+    return pool.reduce((a, x) => strictness(x.b) > strictness(a.b) ? x : a);
   }
   function prnFor(med){
-    const r = prnRec(med); if(!r) return null;
+    if(!prnScheds(med).length) return null;
     const now = Date.now();
     const past = entries.filter(e => sameMed(e.med, med) && e.t <= now).sort((a,b) => a.t - b.t);
     const last = past[past.length - 1];
-    const max = Number(r.max) || 0;
-    // Spacing follows the period the last dose was taken in, and is longer after a bigger dose.
+    const max = Number(medSet(med).max) || 0;
+    // Spacing follows the rules in effect when the last dose was taken, longer after a bigger dose.
     let allowT = -Infinity;
     if(last){
-      const p = periodAt(r, last.t), u = amountOf(p, 1);
-      const scale = r.scale !== false ? amountOf(last, u) / u : 1;
-      allowT = last.t + Number(p.gapH) * 36e5 * scale;
+      const ru = ruleAt(med, last.t);
+      if(ru){ const u = amountOf(ru.b, 1); allowT = last.t + Number(ru.b.gapH) * 36e5 * (ru.s.scale !== false ? amountOf(last, u) / u : 1); }
     }
     const day = past.filter(e => e.t > now - 864e5);
     const used = day.reduce((t, e) => t + amountOf(e, 1), 0);
     if(max){
-      const u = amountOf(periodAt(r, Math.max(now, allowT)), 1);
+      const ru = ruleAt(med, Math.max(now, allowT)), u = ru ? amountOf(ru.b, 1) : 1;
       let tot = used;
       for(let i = 0; i < day.length && tot + u > max + 1e-9; i++){ tot -= amountOf(day[i], 1); allowT = Math.max(allowT, day[i].t + 864e5); }
     }
-    const ready = allowT <= now;
-    const next = plannedFrom(r, Math.max(now, allowT))[0] || null;
-    const p = ready ? periodAt(r, now) : (next ? next.p : periodAt(r, allowT));
-    return { state:"prn", r, last, used, max, unit: r.unit, ready, allowT, p, usual: amountOf(p, 1),
-      nextT: next ? next.t : Math.max(now, allowT), slot: { dose: p.dose, unit: r.unit, sid: r.id, phase: p.key } };
-  }
-  function prnSummary(r){
-    return periodsOf(r).map(p => {
-      const pt = periodTimes(p);
-      return `${p.label} ${shortTime(toMin(p.start))}–${shortTime(toMin(p.end))}: ${fmtAmt(p.dose, r.unit)}, ${p.count}× every ${dur(p.gapH * 36e5)}`
-        + (pt ? ` (${pt.times.map(shortTime).join(", ")})` : "");
-    });
-  }
-
-  // Warn before logging something that would go over the 24-hour max.
-  function overMaxOk(med, dose){
-    const p = prnFor(med); if(!p || !p.max) return true;
-    const total = p.used + amountOf({ dose }, p.usual);
-    return total <= p.max + 1e-9 || confirm(`That would make ${fmtAmt(total, p.unit)} of ${med} in the last 24 hours, over your daily max of ${fmtAmt(p.max, p.unit)}. Log anyway?`);
+    const ready = allowT <= now, from = Math.max(now, allowT), today = dayStartTs(now);
+    let best = null;
+    for(let i = -1; i <= 8; i++){
+      const dTs = addDaysTs(today, i);
+      blocksOnDay(med, dTs).forEach(inst => blockOffsets(inst.b).forEach(m => {
+        const t = atDayMin(dTs, m); if(t >= from && (!best || t < best.t)) best = { t, inst };
+      }));
+    }
+    const ru = (ready ? ruleAt(med, now) : (best ? best.inst : ruleAt(med, allowT))) || ruleAt(med, now);
+    const { s, b, r } = ru;
+    return { state:"prn", s, b, r, last, used, max, unit: s.unit, ready, allowT, usual: amountOf(b, 1),
+      nextT: best ? best.t : from, planned: !!best,
+      slot: { dose: b.dose, unit: s.unit, sid: s.id, range: r ? r.id : "", kind:"prn" } };
   }
 
   function logDose(med, slot, amount){
     const dose = amount ?? slot.dose;
     if(!overMaxOk(med, dose)) return;
     const existing = medNames().find(n => sameMed(n, med));
-    const e = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
-      med: existing || med, dose, unit: slot.unit, t: Date.now(), note: "", sid: slot.sid };
-    if(slot.phase) e.phase = slot.phase;
+    const e = { id: uid(), med: existing || med, dose, unit: slot.unit, t: Date.now(), note: "", sid: slot.sid, kind: slot.kind };
+    if(slot.range) e.range = slot.range;
     entries.push(e);
     persist(); toast(`Logged ${med}${fmtDose(e) ? " " + fmtDose(e) : ""}.`); renderAll();
   }
+
+  /* ================= Up next ================= */
+  let nFilter = "all";
+  document.querySelectorAll("#nFilter button").forEach(b => b.addEventListener("click", () => {
+    nFilter = b.dataset.f;
+    document.querySelectorAll("#nFilter button").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    renderUpNext();
+  }));
+  $("nSearch").addEventListener("input", () => renderUpNext());
 
   function stepperFor(start, step, most, unit, onChange){
     let amt = start;
@@ -823,15 +677,27 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     const box = $("upNext"); box.replaceChildren();
     if(!schedules.length){
       const p = document.createElement("p"); p.className = "empty";
-      p.textContent = "No schedules yet. Tap “Set up schedules” to add one.";
+      p.textContent = "No schedules yet. Add one in Schedules.";
       box.appendChild(p); return;
     }
-    const now = Date.now();
-    const rank = { overdue:0, upcoming:1, prn:1, done:2 };
-    const items = [
+    const now = Date.now(), q = $("nSearch").value.trim().toLowerCase();
+    const rank = { overdue:0, upcoming:1, prn:1, off:2, done:2 };
+    let items = [
       ...medsWhere(s => !isPrn(s)).map(med => ({ med, st: statusFor(med) })),
-      ...medsWhere(s => isPrn(s) && s.day).map(med => ({ med, st: prnFor(med) }))
-    ].filter(x => x.st).sort((a,b) => rank[a.st.state] - rank[b.st.state] || a.st.nextT - b.st.nextT);
+      ...medsWhere(isPrn).map(med => ({ med, st: prnFor(med) }))
+    ].filter(x => x.st);
+    items = items.filter(({ med, st }) => {
+      if(q && !med.toLowerCase().includes(q)) return false;
+      if(nFilter === "timed") return st.state !== "prn";
+      if(nFilter === "prn") return st.state === "prn";
+      if(nFilter === "due") return st.state === "overdue" || (st.state === "prn" && st.ready);
+      return true;
+    }).sort((a,b) => rank[a.st.state] - rank[b.st.state] || a.st.nextT - b.st.nextT);
+    if(!items.length){
+      const p = document.createElement("p"); p.className = "empty";
+      p.textContent = nFilter === "due" && !q ? "Nothing due right now." : "No matches.";
+      box.appendChild(p); return;
+    }
 
     items.forEach(({ med, st }) => {
       const prn = st.state === "prn";
@@ -840,18 +706,16 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       const info = document.createElement("div"); info.className = "info";
       const name = document.createElement("div"); name.className = "name";
       name.append(dot, " " + med + (fmtDose(st.slot) ? " " + fmtDose(st.slot) : ""));
-      if(prn){ const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "PRN " + (st.p.key === "night" ? "night" : "day"); name.appendChild(tag); }
+      if(prn){ const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = "PRN" + (st.r ? " " + st.r.name.toLowerCase() : ""); name.appendChild(tag); }
 
       const when = document.createElement("div"); when.className = "when";
       const big = document.createElement("div"); big.className = "big"; big.textContent = fmtTime(st.nextT);
       const rel = document.createElement("div");
-      if(prn){
-        rel.className = "rel prn";
-        rel.textContent = st.nextT - now < 60000 ? "now" : `in ${dur(st.nextT - now)}`;
-      } else {
+      const soon = st.nextT < atMin(1, 0) ? (st.nextT - now < 60000 ? "now" : `in ${dur(st.nextT - now)}`) : relDay(st.nextT);
+      if(prn){ rel.className = "rel"; rel.textContent = soon; }
+      else {
         rel.className = "rel " + st.state;
-        rel.textContent = st.state === "overdue" ? `overdue ${dur(now - st.nextT)}`
-          : st.state === "upcoming" ? `in ${dur(st.nextT - now)}` : "tomorrow";
+        rel.textContent = st.state === "overdue" ? `overdue ${dur(now - st.nextT)}` : st.state === "upcoming" ? soon : relDay(st.nextT);
       }
       when.append(big, rel);
       info.append(name);
@@ -864,71 +728,82 @@ fieldset.period legend{font-weight:700;padding:0 6px}
         meta.textContent = (st.last ? `Last at ${whenLabel(st.last.t)}${fmtDose(st.last) ? " (" + fmtDose(st.last) + ")" : ""}` : "None logged yet")
           + (st.max ? `, ${+st.used.toFixed(2)} of ${fmtAmt(st.max, st.unit)} in the last 24 h` : "");
         info.append(avail, meta);
-        const most = Number(st.r.maxPer) || 0;
+        const most = Number(medSet(med).maxPer) || 0;
         if(most > st.usual){ amt = st.usual; info.appendChild(stepperFor(st.usual, Math.min(st.usual, 1), most, st.unit, v => { amt = v; })); }
       } else {
         const meta = document.createElement("div"); meta.className = "meta";
-        const bits = [`${st.k} of ${st.n} taken today`];
-        if(st.missed) bits.push(`${st.missed} missed`);
-        if(st.overdue > 1) bits.push(`${st.overdue} overdue`);
-        if(st.last) bits.push(`last at ${fmtTime(st.last.t)}`);
-        meta.textContent = bits.join(", ") + (st.state === "done" ? ". Done for today." : "");
+        if(st.state === "off") meta.textContent = "No doses scheduled today";
+        else {
+          const bits = [`${st.k} of ${st.n} taken today`];
+          if(st.missed) bits.push(`${st.missed} missed`);
+          if(st.overdue > 1) bits.push(`${st.overdue} overdue`);
+          if(st.last) bits.push(`last at ${fmtTime(st.last.t)}`);
+          meta.textContent = bits.join(", ") + (st.state === "done" ? ". Done for today." : "");
+        }
+        const max = Number(medSet(med).max) || 0;
+        if(max) meta.textContent += `. ${+usedIn24(med).toFixed(2)} of ${fmtAmt(max, st.slot.unit)} in the last 24 h`;
         info.append(meta);
       }
 
-      const quiet = prn ? !st.ready : st.state === "done";
+      const quiet = prn ? !st.ready : (st.state === "done" || st.state === "off");
       const btn = document.createElement("button");
       btn.className = "logbtn" + (quiet ? " quiet" : "");
       btn.textContent = "Log now";
       btn.setAttribute("aria-label", `Log ${med} now`);
       btn.addEventListener("click", () => {
         if(prn && !st.ready && !confirm(`Your next ${med} dose isn’t allowed until ${whenLabel(st.allowT)}. Log anyway?`)) return;
-        if(!prn && st.state === "done" && !confirm(`You’ve finished today’s ${med} doses. Log another?`)) return;
+        if(!prn && (st.state === "done" || st.state === "off") && !confirm(st.state === "done" ? `You’ve finished today’s ${med} doses. Log another?` : `No ${med} doses are scheduled today. Log one anyway?`)) return;
         logDose(med, st.slot, amt);
       });
       row.append(when, info, btn); box.appendChild(row);
     });
   }
 
+  /* ================= Schedules list ================= */
+  $("sSearch").addEventListener("input", () => renderSchedList());
+  function describe(s){
+    if(isPrn(s)){
+      return { title: `As needed (PRN), ${daysLabel(s.days)}`, lines: (s.blocks || []).map(b => {
+        const r = b.rangeId ? rangeById(b.rangeId) : null;
+        const times = blockOffsets(b).map(shortTime).join(", ");
+        return `${r ? r.name + " " + rangeHours(r) : "Any time"}: ${fmtAmt(b.dose, s.unit)}, ${b.count}× every ${dur(b.gapH * 36e5)}${times ? " (" + times + ")" : ""}`;
+      }) };
+    }
+    const p = plan(s.per, s.first, s.latest);
+    return { title: `${fmtDose(s) || "Dose"}, ${s.per === 1 ? "once" : s.per + "×"} a day, ${daysLabel(s.days)}`,
+      lines: [p ? p.times.map(minLabel).join(", ") : "Check the times"] };
+  }
   function renderSchedList(){
     const box = $("schedList"); box.replaceChildren();
-    medsWhere(() => true).forEach(med => {
+    const q = $("sSearch").value.trim().toLowerCase();
+    const meds = medsWhere(() => true).filter(m => !q || m.toLowerCase().includes(q)).sort((a,b) => a.localeCompare(b));
+    if(!schedules.length){ const p = document.createElement("p"); p.className = "empty"; p.textContent = "No schedules yet. Add one below."; box.appendChild(p); return; }
+    if(!meds.length){ const p = document.createElement("p"); p.className = "empty"; p.textContent = "No matches."; box.appendChild(p); return; }
+    meds.forEach(med => {
       const head = document.createElement("div"); head.className = "shead";
       const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(med);
       const nm = document.createElement("span"); nm.className = "name"; nm.textContent = med;
       const nx = document.createElement("span"); nx.className = "small";
       const st = statusFor(med), pr = prnFor(med), parts = [];
-      if(st) parts.push("Next: " + (st.state === "done" ? "tomorrow " : "") + fmtTime(st.nextT)
-        + (fmtDose(st.slot) ? ", " + fmtDose(st.slot) : "") + (st.state === "overdue" ? " (overdue)" : ""));
-      if(pr) parts.push("As needed: next planned " + whenLabel(pr.nextT) + (pr.ready ? ", can take now" : ""));
+      if(st) parts.push("Next timed: " + whenLabel(st.nextT) + (fmtDose(st.slot) ? ", " + fmtDose(st.slot) : "") + (st.state === "overdue" ? " (overdue)" : ""));
+      if(pr) parts.push("Next planned as needed: " + whenLabel(pr.nextT) + (pr.ready ? ", can take now" : ""));
+      const lim = medSet(med), unit = (schedules.find(s => sameMed(s.med, med)) || {}).unit || "";
+      if(lim.max) parts.push(`Daily max ${fmtAmt(lim.max, unit)}`);
+      if(lim.maxPer) parts.push(`Up to ${fmtAmt(lim.maxPer, unit)} per dose`);
       nx.textContent = parts.join(". ");
       head.append(dot, nm, nx); box.appendChild(head);
 
       schedules.filter(s => sameMed(s.med, med)).sort((a,b) => isPrn(a) - isPrn(b)).forEach(s => {
+        const d = describe(s);
         const row = document.createElement("div"); row.className = "sched";
         const info = document.createElement("div"); info.className = "info";
-        const t = document.createElement("div");
-        let desc;
-        if(isPrn(s) && s.day){
-          t.textContent = "As needed (PRN)";
-          const lines = prnSummary(s);
-          if(s.max) lines.push(`Daily max ${fmtAmt(s.max, s.unit)} per 24 h`);
-          if(Number(s.maxPer) > 0) lines.push(`Up to ${fmtAmt(s.maxPer, s.unit)} at a time`);
-          lines.forEach(l => { const d = document.createElement("div"); d.className = "small"; d.textContent = l; info.appendChild(d); });
-          desc = "as needed";
-          info.prepend(t);
-        } else if(!isPrn(s)){
-          const p = plan(s.per, s.first, s.latest);
-          t.textContent = `${fmtDose(s) || "Dose"}, ${s.per === 1 ? "once" : s.per + "×"} a day`;
-          desc = p ? p.times.map(minLabel).join(", ") : "Check the times";
-          const small = document.createElement("div"); small.className = "small"; small.textContent = desc;
-          info.append(t, small);
-        } else return;
+        const t = document.createElement("div"); t.textContent = d.title; info.appendChild(t);
+        d.lines.forEach(l => { const x = document.createElement("div"); x.className = "small"; x.textContent = l; info.appendChild(x); });
         const edit = document.createElement("button"); edit.className = "edit"; edit.textContent = "Edit";
         edit.addEventListener("click", () => startEdit(s));
         const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
         del.addEventListener("click", () => {
-          if(!confirm(`Delete this ${med} schedule (${desc})? Your logged doses stay.`)) return;
+          if(!confirm(`Delete this ${med} schedule (${d.title})? Your logged doses stay.`)) return;
           schedules = schedules.filter(x => x.id !== s.id); persistS();
           if(editingId === s.id) resetForm();
           toast("Schedule deleted."); renderAll();
@@ -938,211 +813,687 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     });
   }
 
-  /* Schedule form */
+  /* ================= Time ranges ================= */
+  function coverageGaps(list){
+    const cov = new Array(1440).fill(false);
+    list.forEach(r => { const s = toMin(r.start), sp = rangeSpan(r); for(let i = 0; i < sp; i++) cov[(s + i) % 1440] = true; });
+    const gaps = []; let i = 0;
+    if(cov.every(Boolean)) return gaps;
+    const start0 = cov.indexOf(true) < 0 ? 0 : cov.indexOf(true); // walk from a covered minute so wrap-around gaps join up
+    for(let k = 0; k < 1440; k++){
+      const m = (start0 + k) % 1440;
+      if(!cov[m] && (k === 0 || cov[(m + 1439) % 1440])) gaps.push([m, m]);
+      if(!cov[m]) gaps[gaps.length - 1][1] = m + 1;
+    }
+    return gaps;
+  }
+  function renderRanges(){
+    const box = $("rangeList"); box.replaceChildren();
+    ranges.forEach(r => {
+      const row = document.createElement("div"); row.className = "rangeRow";
+      const mk = (labelText, input) => { const d = document.createElement("div"); const l = document.createElement("label"); l.textContent = labelText; l.htmlFor = input.id; d.append(l, input); return d; };
+      const name = document.createElement("input"); name.id = "rn-" + r.id; name.value = r.name; name.autocomplete = "off";
+      const st = document.createElement("input"); st.type = "time"; st.id = "rs-" + r.id; st.value = r.start;
+      const en = document.createElement("input"); en.type = "time"; en.id = "re-" + r.id; en.value = r.end;
+      const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "✕"; del.setAttribute("aria-label", "Delete " + r.name);
+      const nameWrap = mk("Name", name);
+      const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = shadeFor(r); nameWrap.querySelector("label").prepend(sw);
+      row.append(nameWrap, mk("Starts", st), mk("Ends", en), del);
+      const commit = () => {
+        const nv = name.value.trim(), sv = st.value, ev = en.value;
+        if(!nv){ toast("Give the time range a name."); name.value = r.name; return; }
+        if(!sv || !ev || sv === ev){ toast("Start and end must be different times."); st.value = r.start; en.value = r.end; return; }
+        r.name = nv; r.start = sv; r.end = ev; persistR(); refreshRangeUses(); renderAll();
+      };
+      [name, st, en].forEach(i => i.addEventListener("change", commit));
+      del.addEventListener("click", () => {
+        const users = schedules.filter(s => isPrn(s) && (s.blocks || []).some(b => b.rangeId === r.id));
+        if(users.length){ toast(`${r.name} is used by ${[...new Set(users.map(s => s.med))].join(", ")}. Change those schedules first.`); return; }
+        if(ranges.length <= 1){ toast("Keep at least one time range."); return; }
+        if(!confirm(`Delete the ${r.name} time range?`)) return;
+        ranges = ranges.filter(x => x !== r); persistR(); refreshRangeUses(); renderAll();
+      });
+      box.appendChild(row);
+    });
+    const gaps = coverageGaps(ranges);
+    $("rangeHint").textContent = gaps.length
+      ? "Not covered by any range: " + gaps.map(([a, b]) => `${shortTime(a)}–${shortTime(b)}`).join(", ") + "."
+      : "Your time ranges cover all 24 hours.";
+  }
+  $("addRange").addEventListener("click", () => {
+    const last = ranges[ranges.length - 1];
+    ranges.push({ id: "r" + uid(), name: "New range", start: last ? last.end : "12:00", end: last ? last.start : "13:00" });
+    persistR(); refreshRangeUses(); renderAll();
+    $("rangesBox").open = true;
+    const inp = $("rn-" + ranges[ranges.length - 1].id); if(inp){ inp.focus(); inp.select(); }
+  });
+
+  /* ================= Schedule form ================= */
+  let repeat = "all", customDays = [];
+  function renderDayChips(){
+    const box = $("sDays"); box.replaceChildren();
+    [1,2,3,4,5,6,0].forEach(d => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = DOW[d].slice(0, 2);
+      b.setAttribute("aria-label", DOW[d]); b.setAttribute("aria-pressed", customDays.includes(d) ? "true" : "false");
+      b.addEventListener("click", () => { customDays = customDays.includes(d) ? customDays.filter(x => x !== d) : [...customDays, d]; renderDayChips(); updatePreview(); });
+      box.appendChild(b);
+    });
+  }
+  function setRepeat(r){
+    repeat = r;
+    document.querySelectorAll("#sRepeat button").forEach(b => b.setAttribute("aria-pressed", b.dataset.rep === r ? "true" : "false"));
+    $("sDays").hidden = r !== "custom";
+    if(r === "custom" && !customDays.length) customDays = [1,2,3,4,5];
+    renderDayChips(); updatePreview();
+  }
+  document.querySelectorAll("#sRepeat button").forEach(b => b.addEventListener("click", () => setRepeat(b.dataset.rep)));
+  function readDays(){
+    if(repeat === "weekdays") return [1,2,3,4,5];
+    if(repeat === "weekends") return [0,6];
+    if(repeat === "custom") return customDays.length === 7 ? [] : customDays.slice().sort();
+    return [];
+  }
+  function fillDays(days){
+    const k = (days || []).slice().sort().join("");
+    customDays = (days || []).slice();
+    setRepeat(!k || days.length === 7 ? "all" : k === "12345" ? "weekdays" : k === "06" ? "weekends" : "custom");
+  }
+
   function setMode(m){
     formMode = m;
     document.querySelectorAll("#sMode button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === m ? "true" : "false"));
+    if(m === "prn" && !$("blocks").children.length) defaultBlocks();
     updatePreview();
   }
   document.querySelectorAll("#sMode button").forEach(b => b.addEventListener("click", () => setMode(b.dataset.mode)));
 
-  const P = ["Day", "Night"];
-  function readPrnForm(){
-    const get = (k, f) => $("p" + k + f).value;
-    const day = { first: get("Day","First"),
-      dose: Number(get("Day","Dose")), count: Math.round(Number(get("Day","Count"))), gapH: Number(get("Day","Gap")) };
-    const night = { first: get("Night","First"),
-      dose: Number(get("Night","Dose")), count: Math.round(Number(get("Night","Count"))), gapH: Number(get("Night","Gap")) };
-    const maxRaw = $("sMax").value.trim(), mpRaw = $("sMaxPer").value.trim();
-    return { day, night, max: maxRaw === "" ? 0 : Number(maxRaw), maxPer: mpRaw === "" ? 0 : Number(mpRaw), scale: $("sScale").checked, unit: $("pDayUnit").value.trim() };
+  // PRN blocks: one per time range.
+  let blockSeq = 0;
+  function rangeOptions(sel, value){
+    sel.replaceChildren();
+    ranges.forEach(r => { const o = document.createElement("option"); o.value = r.id; o.textContent = `${r.name} (${rangeHours(r)})`; sel.appendChild(o); });
+    const any = document.createElement("option"); any.value = ""; any.textContent = "Any time"; sel.appendChild(any);
+    sel.value = value != null && (value === "" || rangeById(value)) ? value : (ranges[0] ? ranges[0].id : "");
   }
-  function fillPrnForm(r){
-    const set = (k, f, v) => { $("p" + k + f).value = v; };
-    [["Day", r.day], ["Night", r.night]].forEach(([k, p]) => { set(k,"First", p.first); set(k,"Dose", p.dose); set(k,"Count", p.count); set(k,"Gap", p.gapH); });
-    $("sMax").value = r.max || ""; $("sMaxPer").value = r.maxPer || ""; $("sScale").checked = r.scale !== false;
-    $("pDayUnit").value = $("pNightUnit").value = r.unit || "tablet";
-  }
-  const PRN_DEFAULT = { day: { start:"07:00", end:"21:00", first:"07:00", dose:1, count:5, gapH:3 },
-                        night: { start:"21:00", end:"07:00", first:"21:00", dose:1, count:2, gapH:6 }, max:0, maxPer:0, scale:true, unit:"tablet" };
-  // One unit per medication: the daytime and nighttime unit fields mirror each other.
-  [["pDayUnit","pNightUnit"], ["pNightUnit","pDayUnit"]].forEach(([a, b]) =>
-    $(a).addEventListener("input", () => { $(b).value = $(a).value; $("sUnit").value = $(a).value; updatePreview(); }));
-  // Global hours: daytime end = nighttime start, nighttime end = daytime start, so they always cover 24 hours.
-  function fillDayHours(){
-    $("gDayStart").value = $("gNightEnd").value = dayHours.start;
-    $("gDayEnd").value = $("gNightStart").value = dayHours.end;
-  }
-  [["gDayStart","start"], ["gNightEnd","start"], ["gDayEnd","end"], ["gNightStart","end"]].forEach(([id, k]) =>
-    $(id).addEventListener("change", () => {
-      const v = $(id).value;
-      if(!v){ fillDayHours(); return; }
-      const next = { ...dayHours, [k]: v };
-      if(next.start === next.end){ toast("Daytime and nighttime can’t start at the same time."); fillDayHours(); return; }
-      dayHours = next; fillDayHours();
-      try { localStorage.setItem(DKEY, JSON.stringify(dayHours)); } catch(e){}
-      toast(`Daytime is now ${shortTime(toMin(dayHours.start))}–${shortTime(toMin(dayHours.end))}.`);
-      updatePreview(); renderAll();
-    }));
-  fillDayHours();
-
-  function prnProblems(r){
-    const msgs = [];
-    periodsOf(r).forEach(p => {
-      if(!(p.dose > 0)) msgs.push(`${p.label}: enter a dose.`);
-      if(p.key === "day" && !r.unit) msgs.push("Enter a unit for the doses, like tablet or mg.");
-      if(!(p.count >= 1 && p.count <= 24)) msgs.push(`${p.label}: number of doses must be 1 to 24.`);
-      if(!(p.gapH > 0 && p.gapH <= 24)) msgs.push(`${p.label}: time between doses must be more than 0 and up to 24 hours.`);
-      if(isNaN(toMin(p.first))) msgs.push(`${p.label}: set the first dose time.`);
+  function addBlock(b){
+    const n = ++blockSeq, id = k => `b${n}${k}`;
+    const fs = document.createElement("fieldset"); fs.className = "period block";
+    fs.innerHTML = `
+      <legend><span class="bTitle">Time range</span> <span class="lgd bHours"></span></legend>
+      <div class="full"><label for="${id("R")}">Time range</label><select id="${id("R")}" class="bRange"></select></div>
+      <div class="row">
+        <div><label for="${id("D")}">Dose</label><input id="${id("D")}" class="bDose" type="number" inputmode="decimal" step="any" min="0"></div>
+        <div><label for="${id("U")}">Unit</label><input id="${id("U")}" class="bUnit" list="unitList" autocomplete="off"></div>
+      </div>
+      <div class="row">
+        <div><label for="${id("C")}">Number of doses</label><input id="${id("C")}" class="bCount" type="number" inputmode="numeric" min="1" max="24" step="1"></div>
+        <div><label for="${id("G")}">Hours between doses</label><input id="${id("G")}" class="bGap" type="number" inputmode="decimal" step="any" min="0.25"></div>
+      </div>
+      <div class="row">
+        <div><label for="${id("F")}">First dose</label><input id="${id("F")}" class="bFirst" type="time"></div>
+      </div>
+      <div class="times bTimes"></div>
+      <p class="hint warn bNote"></p>
+      <button type="button" class="del bDel" style="padding-left:0">Remove this time range</button>`;
+    const q = c => fs.querySelector(c);
+    rangeOptions(q(".bRange"), b.rangeId);
+    q(".bDose").value = b.dose ?? ""; q(".bCount").value = b.count ?? ""; q(".bGap").value = b.gapH ?? ""; q(".bFirst").value = b.first || "";
+    const firstUnit = document.querySelector("#blocks .bUnit");
+    q(".bUnit").value = firstUnit ? firstUnit.value : (b.unit || "tablet");
+    q(".bRange").addEventListener("change", () => {
+      const r = rangeById(q(".bRange").value);
+      if(r && !q(".bFirst").value) q(".bFirst").value = r.start;
+      updatePreview();
     });
+    q(".bUnit").addEventListener("input", () => { document.querySelectorAll("#blocks .bUnit").forEach(u => { u.value = q(".bUnit").value; }); updatePreview(); });
+    fs.querySelectorAll("input").forEach(i => i.addEventListener("input", updatePreview));
+    q(".bDel").addEventListener("click", () => { fs.remove(); updatePreview(); });
+    $("blocks").appendChild(fs);
+  }
+  function defaultBlocks(unit){
+    $("blocks").replaceChildren();
+    const D = rangeById("day") || ranges[0], N = rangeById("night") || ranges[1];
+    if(D) addBlock({ rangeId: D.id, dose: 1, count: Math.max(1, Math.min(24, Math.floor((rangeSpan(D) - 1) / 180) + 1)), gapH: 3, first: D.start, unit });
+    if(N) addBlock({ rangeId: N.id, dose: 1, count: Math.max(1, Math.min(24, Math.floor((rangeSpan(N) - 1) / 360) + 1)), gapH: 6, first: N.start, unit });
+    if(!D && !N) addBlock({ rangeId: "", dose: 1, count: 4, gapH: 4, first: "08:00", unit });
+  }
+  $("addBlock").addEventListener("click", () => {
+    const used = [...document.querySelectorAll("#blocks .bRange")].map(s => s.value);
+    const r = ranges.find(x => !used.includes(x.id));
+    addBlock({ rangeId: r ? r.id : "", dose: 1, count: 1, gapH: 4, first: r ? r.start : "08:00" });
+    updatePreview();
+  });
+  function readBlocks(){
+    return [...document.querySelectorAll("#blocks .block")].map(fs => ({
+      rangeId: fs.querySelector(".bRange").value,
+      dose: Number(fs.querySelector(".bDose").value),
+      count: Math.round(Number(fs.querySelector(".bCount").value)),
+      gapH: Number(fs.querySelector(".bGap").value),
+      first: fs.querySelector(".bFirst").value
+    }));
+  }
+  const prnUnit = () => { const u = document.querySelector("#blocks .bUnit"); return u ? u.value.trim() : ""; };
+  function refreshRangeUses(){
+    renderRanges();
+    document.querySelectorAll("#blocks .bRange").forEach(sel => rangeOptions(sel, sel.value));
+    updatePreview();
+  }
+
+  // Which parts of a block's planned times fall outside its time range.
+  function outsideTimes(b){
+    const r = b.rangeId ? rangeById(b.rangeId) : null; if(!r) return [];
+    const s = toMin(r.start), span = rangeSpan(r), offs = blockOffsets(b), f = toMin(b.first);
+    return offs.filter(off => (((off - s) % 1440) + 1440) % 1440 >= span || off - f >= 1440);
+  }
+  function readForm(){
+    const med = $("sMed").value.trim(), days = readDays();
+    if(formMode === "prn") return { med, mode:"prn", days, unit: prnUnit(), scale: $("sScale").checked, blocks: readBlocks() };
+    const doseRaw = $("sDose").value.trim();
+    return { med, mode:"sched", days, per: Math.round(Number($("sPer").value)), first: $("sFirst").value, latest: $("sLatest").value,
+      dose: doseRaw === "" ? "" : Number(doseRaw), unit: $("sUnit").value.trim() };
+  }
+  function problems(rec){
+    const msgs = [];
+    if(repeat === "custom" && !customDays.length) msgs.push("Pick at least one day.");
+    if(rec.mode === "prn"){
+      if(!rec.blocks.length) msgs.push("Add at least one time range.");
+      if(!rec.unit) msgs.push("Enter a unit for the doses, like tablet or mg.");
+      rec.blocks.forEach((b, i) => {
+        const nm = b.rangeId ? (rangeById(b.rangeId) || {}).name : "Any time";
+        if(!(b.dose > 0)) msgs.push(`${nm}: enter a dose.`);
+        if(!(b.count >= 1 && b.count <= 24)) msgs.push(`${nm}: number of doses must be 1 to 24.`);
+        if(!(b.gapH > 0 && b.gapH <= 24)) msgs.push(`${nm}: hours between doses must be more than 0 and up to 24.`);
+        if(isNaN(toMin(b.first))) msgs.push(`${nm}: set the first dose time.`);
+      });
+    } else {
+      if(!plan(rec.per, rec.first, rec.latest)) msgs.push(!(rec.per >= 1 && rec.per <= 12) ? "Doses per day must be 1 to 12." : "The last dose time needs to be later than the first dose.");
+      if(rec.dose !== "" && !(rec.dose >= 0)) msgs.push("Dose must be a number.");
+    }
     return msgs;
   }
-
-  function updatePreview(){
-    const prn = formMode === "prn";
-    $("schedFields").hidden = prn; $("sPreviewWrap").hidden = prn; $("prnFields").hidden = !prn; $("sDoseRow").hidden = prn;
-    $("sWarn").textContent = scheduleWarning();
-    if(prn){
-      const r = readPrnForm(), unit = r.unit;
-      const plural = unit ? unitFor(2, unit) : "";
-      $("sMaxLabel").textContent = "Daily max (24 h)" + (plural ? ", " + plural : "");
-      $("sMaxPerLabel").textContent = "Most per dose" + (plural ? ", " + plural : "");
-      periodsOf(r).forEach((p, i) => {
-        const k = P[i], box = $("p" + k + "Times"); box.replaceChildren();
-        $("p" + k + "Hours").textContent = `${shortTime(toMin(p.start))}–${shortTime(toMin(p.end))}`;
-        const pt = periodTimes(p);
-        $("p" + k + "Note").textContent = !pt ? "" : pt.outside.length
-          ? `${pt.outside.map(shortTime).join(", ")} ${pt.outside.length === 1 ? "falls" : "fall"} outside ${p.label.toLowerCase()} hours.` : "";
-        if(pt) pt.times.forEach(m => { const s = document.createElement("span"); s.className = "time" + (pt.outside.includes(m) ? " out" : ""); s.textContent = shortTime(m); box.appendChild(s); });
-      });
-      const planned = periodsOf(r).reduce((t, p) => t + (p.dose > 0 && p.count > 0 ? p.dose * p.count : 0), 0);
-      $("sGap").textContent = `Planned: ${fmtAmt(planned, unit)} a day.`
-        + (r.max ? ` Daily max ${fmtAmt(r.max, unit)} in any 24 hours, counting every dose.` : "")
-        + " The times are a guide; as-needed doses are never shown as overdue or missed.";
-      return;
-    }
-    const per = Math.round(Number($("sPer").value));
-    $("sLatestWrap").style.display = per > 1 ? "" : "none";
-    const box = $("sPreview"); box.replaceChildren();
-    const p = plan(per, $("sFirst").value, $("sLatest").value);
-    if(!p){
-      $("sGap").textContent = !(per >= 1 && per <= 12) ? "Doses per day must be 1 to 12."
-        : "The last dose time needs to be later than the first dose.";
-      return;
-    }
-    p.times.forEach(m => { const s = document.createElement("span"); s.className = "time"; s.textContent = minLabel(m); box.appendChild(s); });
-    $("sGap").textContent = per === 1 ? "Once a day." : `About every ${dur(p.gap * 60000)}.`;
+  function plannedFor(s, wd){
+    if(s.days && s.days.length && !s.days.includes(wd)) return 0;
+    return isPrn(s) ? (s.blocks || []).reduce((t, b) => t + (b.dose > 0 && b.count > 0 ? b.dose * b.count : 0), 0)
+      : Math.round(Number(s.per)) * amountOf(s, 1);
   }
-  ["sMed","sPer","sFirst","sLatest","sMax","sMaxPer","sDose","sUnit",
-   ...P.flatMap(k => ["First","Dose","Count","Gap"].map(f => "p" + k + f))].forEach(id => $(id).addEventListener("input", updatePreview));
-  $("sScale").addEventListener("change", updatePreview);
-
-  // Compares what's being saved with the medication's other schedules and its daily max.
-  function scheduleWarning(){
-    const med = $("sMed").value.trim(); if(!med) return "";
-    const others = schedules.filter(x => x.id !== editingId && sameMed(x.med, med));
-    const otherPrn = others.find(x => isPrn(x) && x.day);
-    const timed = others.filter(x => !isPrn(x)).map(x => ({ per: Math.round(Number(x.per)), amt: amountOf(x, 1) }));
-    let prnPlan = null, max = 0, most = 0, unit = $("sUnit").value.trim();
-    if(formMode === "prn"){ prnPlan = readPrnForm(); max = prnPlan.max; most = prnPlan.maxPer; unit = prnPlan.unit; }
-    else {
-      timed.push({ per: Math.round(Number($("sPer").value)) || 0, amt: Number($("sDose").value) > 0 ? Number($("sDose").value) : 1 });
-      if(otherPrn){ prnPlan = otherPrn; max = Number(otherPrn.max) || 0; most = Number(otherPrn.maxPer) || 0; unit = otherPrn.unit || unit; }
-    }
-    const msgs = [];
-    if(formMode === "prn") msgs.push(...prnProblems(prnPlan));
-    const timedTotal = timed.reduce((t, x) => t + x.per * x.amt, 0);
-    const prnTotal = prnPlan ? periodsOf(prnPlan).reduce((t, p) => t + (p.dose > 0 && p.count > 0 ? p.dose * p.count : 0), 0) : 0;
-    const total = timedTotal + prnTotal;
-    if(max && total > max + 1e-9){
-      const parts = prnPlan ? periodsOf(prnPlan).map(p => `${p.label.toLowerCase()} ${fmtAmt(p.dose * p.count, unit)}`) : [];
-      if(timedTotal) parts.push(`timed ${fmtAmt(timedTotal, unit)}`);
-      msgs.push(`Planned doses add up to ${fmtAmt(total, unit)} a day (${parts.join(", ")}), over the daily max of ${fmtAmt(max, unit)}.`);
+  // Daily max and most-per-dose checks across every schedule of the medication.
+  function limitWarnings(rec, others){
+    const msgs = [], all = [...others, rec];
+    const max = Number($("sMax").value) || 0, most = Number($("sMaxPer").value) || 0, unit = rec.unit || (others[0] || {}).unit || "";
+    if(max){
+      const over = [];
+      for(let wd = 0; wd < 7; wd++){ const tot = all.reduce((t, s) => t + plannedFor(s, wd), 0); if(tot > max + 1e-9) over.push([wd, tot]); }
+      if(over.length){
+        const worst = Math.max(...over.map(o => o[1]));
+        const when = over.length === 7 ? "every day" : "on " + over.map(o => DOW[o[0]]).join(", ");
+        msgs.push(`Planned doses of ${rec.med} add up to as much as ${fmtAmt(worst, unit)} ${when}, over the daily max of ${fmtAmt(max, unit)}.`);
+      }
     }
     if(most){
-      const doses = timed.map(x => x.amt).concat(prnPlan ? periodsOf(prnPlan).map(p => p.dose) : []);
+      const doses = all.flatMap(s => isPrn(s) ? (s.blocks || []).map(b => Number(b.dose) || 0) : [amountOf(s, 0)]);
       const big = Math.max(0, ...doses);
       if(big > most + 1e-9) msgs.push(`A ${fmtAmt(big, unit)} dose is more than the most per dose (${fmtAmt(most, unit)}).`);
     }
-    if(formMode === "prn" && prnPlan) periodsOf(prnPlan).forEach(p => {
-      const pt = periodTimes(p);
-      if(pt && pt.outside.length) msgs.push(`Some ${p.label.toLowerCase()} doses fall outside its hours.`);
-    });
-    return msgs.join(" ");
+    if(rec.mode === "prn"){
+      if(rec.blocks.some(b => outsideTimes(b).length)) msgs.push("Some planned doses fall outside their time range.");
+      const rs = rec.blocks.map(b => b.rangeId).filter(Boolean);
+      for(let i = 0; i < rs.length; i++) for(let j = i + 1; j < rs.length; j++){
+        const a = rangeById(rs[i]), b = rangeById(rs[j]);
+        if(a && b && a !== b){
+          const ov = new Array(1440).fill(0); [a, b].forEach(r => { const s = toMin(r.start); for(let k = 0; k < rangeSpan(r); k++) ov[(s + k) % 1440]++; });
+          if(ov.some(v => v > 1)) msgs.push(`${a.name} and ${b.name} overlap; where they do, the stricter spacing applies.`);
+        } else if(a && a === b) msgs.push(`${a.name} is used twice.`);
+      }
+    }
+    return msgs;
   }
+  const othersFor = (med, exceptId) => schedules.filter(s => sameMed(s.med, med) && s.id !== exceptId);
+
+  function updatePreview(){
+    const prn = formMode === "prn";
+    $("schedFields").hidden = prn; $("prnFields").hidden = !prn;
+    const rec = readForm();
+    const unit = prn ? rec.unit : rec.unit;
+    const plural = unit ? unitFor(2, unit) : "";
+    $("sMaxLabel").textContent = "Daily max (24 h)" + (plural ? ", " + plural : "");
+    $("sMaxPerLabel").textContent = "Most per dose" + (plural ? ", " + plural : "");
+    $("limitsFor").textContent = rec.med ? `for ${rec.med}, across all its schedules` : "for this medication, across all its schedules";
+    const probs = problems(rec);
+    const others = rec.med ? othersFor(rec.med, editingId) : [];
+    $("sWarn").textContent = [...(rec.med ? probs : probs.filter(p => !/unit/.test(p))), ...(rec.med && !probs.length ? limitWarnings(rec, others) : [])].join(" ");
+    if(prn){
+      const fsList = [...document.querySelectorAll("#blocks .block")];
+      fsList.forEach((fs, i) => {
+        const b = rec.blocks[i], r = b.rangeId ? rangeById(b.rangeId) : null;
+        fs.querySelector(".bTitle").textContent = r ? r.name : "Any time";
+        fs.querySelector(".bHours").textContent = r ? rangeHours(r) : "";
+        fs.querySelector(".bDel").hidden = fsList.length < 2;
+        const box = fs.querySelector(".bTimes"); box.replaceChildren();
+        const out = outsideTimes(b);
+        blockOffsets(b).forEach(m => { const s = document.createElement("span"); s.className = "time" + (out.includes(m) ? " out" : ""); s.textContent = shortTime(m); box.appendChild(s); });
+        fs.querySelector(".bNote").textContent = out.length ? `${out.map(shortTime).join(", ")} ${out.length === 1 ? "falls" : "fall"} outside ${r.name} hours.` : "";
+      });
+      const planned = rec.blocks.reduce((t, b) => t + (b.dose > 0 && b.count > 0 ? b.dose * b.count : 0), 0);
+      const used = rec.blocks.map(b => b.rangeId ? rangeById(b.rangeId) : null);
+      const gaps = used.some(r => !r) ? [] : coverageGaps(used.filter(Boolean));
+      $("sGap").textContent = `Planned: ${fmtAmt(planned, unit)} a day, ${daysLabel(rec.days)}.`
+        + (gaps.length ? ` Not covered: ${gaps.map(([a, b]) => `${shortTime(a)}–${shortTime(b)}`).join(", ")}; the strictest spacing applies then.` : "")
+        + " The times are a guide; as-needed doses are never overdue or missed.";
+      return;
+    }
+    $("sLatestWrap").style.display = rec.per > 1 ? "" : "none";
+    const box = $("sPreview"); box.replaceChildren();
+    const p = plan(rec.per, rec.first, rec.latest);
+    if(!p){ $("sGap").textContent = ""; return; }
+    p.times.forEach(m => { const s = document.createElement("span"); s.className = "time"; s.textContent = minLabel(m); box.appendChild(s); });
+    $("sGap").textContent = (rec.per === 1 ? "Once a day" : `About every ${dur(p.gap * 60000)}`) + `, ${daysLabel(rec.days)}.`;
+  }
+  ["sPer","sFirst","sLatest","sMax","sMaxPer","sDose","sUnit"].forEach(id => $(id).addEventListener("input", updatePreview));
+  $("sScale").addEventListener("change", updatePreview);
+  $("sMed").addEventListener("input", updatePreview);
   $("sMed").addEventListener("change", () => {
-    const last = lastFor($("sMed").value.trim());
+    const med = $("sMed").value.trim(); if(!med) return;
+    const lim = medSet(med);
+    if(!editingId){ $("sMax").value = lim.max || ""; $("sMaxPer").value = lim.maxPer || ""; }
+    const last = lastFor(med);
     if(last && $("sDose").value === ""){ $("sDose").value = last.dose ?? ""; $("sUnit").value = last.unit || ""; }
+    updatePreview();
   });
 
   function startEdit(s){
     editingId = s.id;
-    $("sMed").value = s.med; $("sUnit").value = s.unit || "";
-    if(isPrn(s)) fillPrnForm(s);
-    else { $("sDose").value = s.dose ?? ""; $("sPer").value = s.per; $("sFirst").value = s.first; $("sLatest").value = s.latest || "22:00"; }
+    $("sMed").value = s.med;
+    const lim = medSet(s.med); $("sMax").value = lim.max || ""; $("sMaxPer").value = lim.maxPer || "";
+    fillDays(s.days);
+    if(isPrn(s)){
+      $("blocks").replaceChildren();
+      (s.blocks || []).forEach(b => addBlock({ ...b, unit: s.unit }));
+      document.querySelectorAll("#blocks .bUnit").forEach(u => { u.value = s.unit || ""; });
+      $("sScale").checked = s.scale !== false;
+    } else {
+      $("sDose").value = s.dose ?? ""; $("sUnit").value = s.unit || ""; $("sPer").value = s.per; $("sFirst").value = s.first; $("sLatest").value = s.latest || "22:00";
+    }
     $("schedFormH").textContent = "Edit " + s.med; $("sCancel").hidden = false;
-    $("nextCard").open = true; $("schedDetails").open = true;
+    $("schedCard").open = true;
     setMode(isPrn(s) ? "prn" : "sched");
-    $("schedFormH").scrollIntoView({ behavior: "smooth", block: "start" });
+    if($("schedFormH").scrollIntoView) $("schedFormH").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   function resetForm(){
     editingId = null;
     $("sMed").value = ""; $("sPer").value = 2; $("sFirst").value = "08:00"; $("sLatest").value = "22:00";
-    $("sDose").value = ""; $("sUnit").value = "mg";
-    fillPrnForm(PRN_DEFAULT);
+    $("sDose").value = ""; $("sUnit").value = "mg"; $("sMax").value = ""; $("sMaxPer").value = ""; $("sScale").checked = true;
+    $("blocks").replaceChildren();
+    customDays = []; setRepeat("all");
     $("schedFormH").textContent = "Add a schedule"; $("sCancel").hidden = true; setMode("sched");
   }
   $("sCancel").addEventListener("click", resetForm);
-  $("sSave").addEventListener("click", () => {
-    const medIn = $("sMed").value.trim();
-    if(!medIn){ toast("Enter a medication name."); $("sMed").focus(); return; }
-    const med = medNames().find(n => sameMed(n, medIn)) || scheduledName(medIn) || medIn;
-    let rec;
-    if(formMode === "prn"){
-      const r = readPrnForm();
-      const bad = prnProblems(r);
-      if(bad.length){ toast(bad[0]); return; }
-      if($("sMax").value.trim() !== "" && !(r.max > 0)){ toast("Daily max must be a number, or blank."); return; }
-      if($("sMaxPer").value.trim() !== "" && !(r.maxPer > 0)){ toast("Most per dose must be a number, or blank."); return; }
-      const clash = schedules.find(x => isPrn(x) && sameMed(x.med, med) && x.id !== editingId);
-      if(clash && !confirm(`${med} already has an as-needed schedule. Replace it with this one?`)) return;
-      schedules = schedules.filter(x => x !== clash);
-      rec = { med, mode:"prn", ...r };
-    } else {
-      const doseRaw = $("sDose").value.trim();
-      const dose = doseRaw === "" ? "" : Number(doseRaw);
-      if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); return; }
-      const per = Math.round(Number($("sPer").value));
-      if(!plan(per, $("sFirst").value, $("sLatest").value)){ toast("Check doses per day and the times."); return; }
-      rec = { med, mode:"sched", per, first: $("sFirst").value, latest: $("sLatest").value, dose, unit: $("sUnit").value.trim() };
-    }
-    const warn = scheduleWarning();
-    if(warn && !confirm(warn + " Save anyway?")) return;
-    if(editingId) schedules = schedules.map(x => x.id === editingId ? { id: x.id, ...rec } : x);
-    else schedules.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), ...rec });
-    persistS(); toast("Schedule saved for " + med + "."); resetForm(); renderAll();
-  });
-  function scheduledName(n){ const s = schedules.find(x => sameMed(x.med, n)); return s && s.med; }
 
-  /* ---------- Collapsible sections ---------- */
-  const UKEY = "medlog.ui.v1";
-  let ui = {};
-  try { ui = JSON.parse(localStorage.getItem(UKEY)) || {}; } catch(e){}
+  // A small chooser dialog; resolves with the chosen key, or null.
+  function choose(title, text, options, extra){
+    return new Promise(resolve => {
+      const m = $("modal"), box = $("modalBox"); box.replaceChildren();
+      const h = document.createElement("h3"); h.id = "modalH"; h.textContent = title;
+      const p = document.createElement("p"); p.textContent = text;
+      box.append(h, p);
+      const done = v => { m.hidden = true; document.removeEventListener("keydown", esc); resolve(v); };
+      const esc = ev => { if(ev.key === "Escape") done(null); };
+      if(extra) extra(box, done);
+      options.forEach(o => {
+        const b = document.createElement("button"); b.type = "button"; b.className = "opt " + (o.kind || "ghost");
+        b.textContent = o.label;
+        if(o.sub){ const s = document.createElement("small"); s.textContent = o.sub; b.appendChild(s); }
+        b.addEventListener("click", () => done(o.key));
+        box.appendChild(b);
+      });
+      m.hidden = false; document.addEventListener("keydown", esc);
+      m.onclick = ev => { if(ev.target === m) done(null); };
+      const first = box.querySelector("button"); if(first) first.focus();
+    });
+  }
+
+  $("sSave").addEventListener("click", async () => {
+    const rec = readForm();
+    if(!rec.med){ toast("Enter a medication name."); $("sMed").focus(); return; }
+    rec.med = medNames().find(n => sameMed(n, rec.med)) || rec.med;
+    const bad = problems(rec);
+    if(bad.length){ toast(bad[0]); return; }
+    const maxRaw = $("sMax").value.trim(), mpRaw = $("sMaxPer").value.trim();
+    if(maxRaw !== "" && !(Number(maxRaw) > 0)){ toast("Daily max must be a number, or blank."); return; }
+    if(mpRaw !== "" && !(Number(mpRaw) > 0)){ toast("Most per dose must be a number, or blank."); return; }
+
+    let others = othersFor(rec.med, editingId), replace = false;
+    if(!editingId && others.length){
+      const pick = await choose(`${rec.med} already has ${others.length === 1 ? "a schedule" : others.length + " schedules"}`,
+        "Would you like to edit an existing schedule, replace it with this one, or keep both?",
+        [{ key:"replace", label: others.length === 1 ? "Replace it with this one" : "Replace them all with this one", kind:"ghost", sub:"The existing schedule goes away; your logged doses stay." },
+         { key:"both", label:"Keep both", kind:"primary", sub:"Useful for different days, like weekday and weekend schedules." },
+         { key:null, label:"Cancel", kind:"ghost" }],
+        (box, done) => others.forEach(s => {
+          const d = describe(s);
+          const ex = document.createElement("div"); ex.className = "ex";
+          const t = document.createElement("div"); t.textContent = d.title;
+          const sm = document.createElement("small"); sm.style.display = "block"; sm.style.color = "var(--muted)"; sm.textContent = d.lines.join("; ");
+          t.appendChild(sm);
+          const eb = document.createElement("button"); eb.type = "button"; eb.className = "edit"; eb.textContent = "Edit this";
+          eb.addEventListener("click", () => done("edit:" + s.id));
+          ex.append(t, eb); box.appendChild(ex);
+        }));
+      if(!pick) return;
+      if(pick.startsWith("edit:")){
+        const s = schedById(pick.slice(5));
+        if(s) startEdit(s);
+        return;
+      }
+      if(pick === "replace"){ replace = true; others = []; }
+    }
+    const warn = limitWarnings(rec, others).join(" ");
+    if(warn && !confirm(warn + " Save anyway?")) return;
+
+    if(replace) schedules = schedules.filter(s => !sameMed(s.med, rec.med));
+    if(editingId) schedules = schedules.map(x => x.id === editingId ? { id: x.id, ...rec } : x);
+    else schedules.push({ id: uid(), ...rec });
+    medSettings[rec.med.toLowerCase()] = { ...(medSettings[rec.med.toLowerCase()] || {}), max: Number(maxRaw) || 0, maxPer: Number(mpRaw) || 0 };
+    persistS(); persistM();
+    toast((replace ? "Replaced: " : "Saved: ") + rec.med + "."); resetForm(); renderAll();
+  });
+
+  /* ================= Log a dose ================= */
+  function renderQuick(){
+    const box = $("quick"); box.replaceChildren();
+    const dl = $("medList"); dl.replaceChildren();
+    const names = medNames();
+    names.forEach(n => { const o = document.createElement("option"); o.value = n; dl.appendChild(o); });
+    const recent = names.map(n => lastFor(n)).filter(Boolean).sort((a,b) => b.t - a.t).slice(0, 6);
+    recent.forEach(e => {
+      const b = document.createElement("button");
+      b.className = "chip"; b.type = "button";
+      const d = document.createElement("span"); d.className = "dot"; d.style.background = colorFor(e.med);
+      b.append(d, document.createTextNode(e.med + (fmtDose(e) ? " " + fmtDose(e) : "")));
+      b.addEventListener("click", () => {
+        $("med").value = e.med; $("dose").value = e.dose ?? ""; $("unit").value = e.unit || "";
+        $("when").value = localInput(new Date());
+        $("save").focus();
+      });
+      box.appendChild(b);
+    });
+    box.style.display = recent.length ? "" : "none";
+  }
+  $("save").addEventListener("click", () => {
+    const med = $("med").value.trim();
+    if(!med){ toast("Enter a medication name."); $("med").focus(); return; }
+    const doseRaw = $("dose").value.trim();
+    const dose = doseRaw === "" ? "" : Number(doseRaw);
+    if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); $("dose").focus(); return; }
+    const when = $("when").value ? new Date($("when").value) : new Date();
+    if(isNaN(when)){ toast("Check the date and time."); return; }
+    const existing = medNames().find(n => sameMed(n, med));
+    if(!overMaxOk(existing || med, dose)) return;
+    entries.push({ id: uid(), med: existing || med, dose, unit: $("unit").value.trim(), t: when.getTime(), note: $("note").value.trim(), kind: "manual" });
+    persist();
+    $("note").value = ""; $("when").value = localInput(new Date());
+    toast("Logged " + (existing || med) + ".");
+    renderAll();
+  });
+
+  /* ================= Dose Log chart ================= */
+  let hiddenMeds = new Set(Array.isArray(ui.hiddenMeds) ? ui.hiddenMeds : []);
+  document.querySelectorAll(".seg button[data-range]").forEach(b => b.addEventListener("click", () => {
+    range = b.dataset.range;
+    document.querySelectorAll(".seg button[data-range]").forEach(x => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+    $("detail").textContent = "";
+    renderChart();
+  }));
+  function renderMedFilter(){
+    const box = $("logMeds"); box.replaceChildren();
+    const names = [...new Set(entries.map(e => medNames().find(n => sameMed(n, e.med)) || e.med))].sort((a,b) => a.localeCompare(b));
+    if(names.length < 2){ box.hidden = true; return; }
+    box.hidden = false;
+    names.forEach(n => {
+      const b = document.createElement("button"); b.type = "button"; b.className = "chip";
+      const on = !hiddenMeds.has(n.toLowerCase());
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      const d = document.createElement("span"); d.className = "dot"; d.style.background = colorFor(n);
+      b.append(d, document.createTextNode(n));
+      b.addEventListener("click", () => {
+        const k = n.toLowerCase(); hiddenMeds.has(k) ? hiddenMeds.delete(k) : hiddenMeds.add(k);
+        ui.hiddenMeds = [...hiddenMeds]; persistUI(); renderMedFilter(); renderChart();
+      });
+      box.appendChild(b);
+    });
+    if(hiddenMeds.size){
+      const all = document.createElement("button"); all.type = "button"; all.className = "chip"; all.textContent = "Show all";
+      all.addEventListener("click", () => { hiddenMeds.clear(); ui.hiddenMeds = []; persistUI(); renderMedFilter(); renderChart(); });
+      box.appendChild(all);
+    }
+  }
+  function renderLegend(){
+    const box = $("legend"); box.replaceChildren();
+    ranges.forEach(r => {
+      const s = document.createElement("span"); const i = document.createElement("i"); i.style.background = shadeFor(r);
+      s.append(i, document.createTextNode(`${r.name} ${rangeHours(r)}`)); box.appendChild(s);
+    });
+  }
+  function renderChart(){
+    const svg = $("chart"); svg.replaceChildren();
+    const now = Date.now();
+    const visible = entries.filter(e => !hiddenMeds.has(e.med.toLowerCase()));
+    let x0, x1;
+    if(range === "all"){
+      if(!visible.length){ x0 = now - 7*864e5; x1 = now; }
+      else {
+        const ts = visible.map(e => e.t);
+        x0 = Math.min(...ts); x1 = Math.max(...ts, now);
+        const padT = Math.max((x1 - x0) * 0.04, 36e5); x0 -= padT; x1 += padT;
+      }
+    } else { x1 = now + 36e5 * 0.5; x0 = now - Number(range) * 864e5; }
+
+    const shown = visible.filter(e => e.t >= x0 && e.t <= x1);
+    const meds = [...new Set(shown.map(e => medNames().find(n => sameMed(n, e.med)) || e.med))].sort((a,b) => a.localeCompare(b));
+    const W = Math.max($("chartWrap").clientWidth, 300);
+    const left = 96, right = 14, top = 8, laneH = 46, axisH = 44;
+    const lanes = Math.max(meds.length, 1);
+    const H = top + lanes * laneH + axisH;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", W); svg.setAttribute("height", H);
+    const xs = t => left + (t - x0) / (x1 - x0) * (W - left - right);
+    const span = x1 - x0, axisY = top + lanes * laneH;
+    const clampX = t => Math.min(Math.max(xs(t), left), W - right);
+    const base = dayStartTs(x0);
+
+    // time-range shading
+    ranges.forEach(r => {
+      const fill = shadeFor(r), s = toMin(r.start), sp = rangeSpan(r);
+      for(let i = -1; i < 4000; i++){
+        const dTs = addDaysTs(base, i), a = atDayMin(dTs, s), b = atDayMin(dTs, s + sp);
+        if(a > x1) break;
+        if(b <= x0) continue;
+        const xa = clampX(a), xb = clampX(b);
+        if(xb - xa >= 0.5) svg.appendChild(svgEl("rect", { x: xa, y: top, width: xb - xa, height: axisY - top, fill }));
+      }
+    });
+
+    if(!meds.length){
+      const tx = svgEl("text", {x: (left + W - right) / 2, y: top + laneH / 2 + 4, "text-anchor":"middle"});
+      tx.textContent = entries.length ? (visible.length ? "No doses in this range." : "All medications are hidden.") : "Log a dose to see it here.";
+      svg.appendChild(tx);
+    }
+    meds.forEach((m, i) => {
+      const y = top + i * laneH;
+      if(i > 0) svg.appendChild(svgEl("line", {x1:0, x2:W-right, y1:y, y2:y, stroke:"var(--line)"}));
+      const lab = svgEl("text", {x:8, y: y + laneH/2 + 4, class:"lane-label"});
+      lab.textContent = m.length > 11 ? m.slice(0,10) + "…" : m;
+      const ttl = svgEl("title", {}); ttl.textContent = m; lab.appendChild(ttl);
+      svg.appendChild(lab);
+    });
+
+    // ticks: time on the first line, date on the second, always
+    svg.appendChild(svgEl("line", {x1:left, x2:W-right, y1:axisY, y2:axisY, stroke:"var(--line)"}));
+    const maxTicks = Math.max(3, Math.floor((W - left - right) / 46));
+    const stepH = [1,2,3,4,6,12,24,48,72,96,168,336,720].find(s => span / (s * 36e5) <= maxTicks) || 1440;
+    for(let i = 0; i < 5000; i++){
+      const d = new Date(base);
+      if(stepH >= 24) d.setDate(d.getDate() + i * stepH / 24); else d.setHours(i * stepH);
+      const t = d.getTime(); if(t > x1) break; if(t < x0) continue;
+      const x = xs(t); if(x < left || x > W - right) continue;
+      svg.appendChild(svgEl("line", {x1:x, x2:x, y1:top, y2:axisY+4, stroke:"var(--line)", "stroke-dasharray":"2 4"}));
+      const t1 = svgEl("text", {x, y: axisY + 17, "text-anchor":"middle"}); t1.textContent = d.toLocaleTimeString([], {hour:"numeric"});
+      const t2 = svgEl("text", {x, y: axisY + 32, "text-anchor":"middle"}); t2.textContent = d.toLocaleDateString([], {month:"short", day:"numeric"});
+      svg.append(t1, t2);
+    }
+
+    // dots: size relative to that medication's largest dose
+    const maxDose = {};
+    shown.forEach(e => { const k = e.med.toLowerCase(); maxDose[k] = Math.max(maxDose[k] || 0, Number(e.dose) || 0); });
+    shown.slice().sort((a,b) => a.t - b.t).forEach(e => {
+      const i = meds.findIndex(m => sameMed(m, e.med));
+      const cy = top + i * laneH + laneH / 2, cx = xs(e.t);
+      const md = maxDose[e.med.toLowerCase()];
+      const r = md > 0 ? 3 + 3 * ((Number(e.dose) || 0) / md) : 4.5;
+      const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": `${e.med} ${fmtDose(e)}, ${fmtDay(e.t)} ${fmtTime(e.t)}`, style:"cursor:pointer"});
+      g.appendChild(svgEl("circle", {cx, cy, r: 11, fill:"transparent"}));
+      g.appendChild(svgEl("circle", {cx, cy, r, fill: colorFor(e.med), "fill-opacity":"0.9", stroke:"var(--surface)", "stroke-width":"1"}));
+      const show = () => { $("detail").textContent = `${e.med}${fmtDose(e) ? " " + fmtDose(e) : ""}, taken ${fmtDay(e.t)} at ${fmtTime(e.t)}${e.note ? ". " + e.note : ""}`; };
+      g.addEventListener("click", show);
+      g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); show(); }});
+      svg.appendChild(g);
+    });
+  }
+
+  /* ================= History ================= */
+  ["hSearch","hFrom","hTo"].forEach(id => $(id).addEventListener("input", renderHistory));
+  ["hMed","hType"].forEach(id => $(id).addEventListener("change", renderHistory));
+  $("hClear").addEventListener("click", () => {
+    $("hSearch").value = ""; $("hMed").value = ""; $("hType").value = "all"; $("hFrom").value = ""; $("hTo").value = "";
+    renderHistory();
+  });
+  function renderHistMedOptions(){
+    const sel = $("hMed"), cur = sel.value; sel.replaceChildren();
+    const all = document.createElement("option"); all.value = ""; all.textContent = "All medications"; sel.appendChild(all);
+    medNames().forEach(n => { const o = document.createElement("option"); o.value = n.toLowerCase(); o.textContent = n; sel.appendChild(o); });
+    sel.value = [...sel.options].some(o => o.value === cur) ? cur : "";
+  }
+  function kindLabel(e){
+    const k = entryKind(e), r = e.range ? rangeById(e.range) : null;
+    return k === "prn" ? ", as needed" + (r ? ` (${r.name.toLowerCase()})` : "") : k === "sched" ? ", timed schedule" : "";
+  }
+  function renderHistory(){
+    const box = $("history"); box.replaceChildren();
+    const q = $("hSearch").value.trim().toLowerCase(), med = $("hMed").value, type = $("hType").value;
+    const from = $("hFrom").value ? new Date($("hFrom").value + "T00:00").getTime() : -Infinity;
+    const to = $("hTo").value ? addDaysTs(new Date($("hTo").value + "T00:00").getTime(), 1) : Infinity;
+    const filtering = !!(q || med || type !== "all" || $("hFrom").value || $("hTo").value);
+    $("hClear").hidden = !filtering;
+    const list = entries.filter(e => {
+      if(med && e.med.toLowerCase() !== med) return false;
+      if(type !== "all" && entryKind(e) !== type) return false;
+      if(e.t < from || e.t >= to) return false;
+      if(q && ![e.med, e.note || "", fmtDose(e)].join(" ").toLowerCase().includes(q)) return false;
+      return true;
+    }).sort((a,b) => b.t - a.t);
+    $("hCount").textContent = !entries.length ? "" : filtering ? `${list.length} of ${entries.length} doses` : `${entries.length} dose${entries.length === 1 ? "" : "s"}`;
+    if(!list.length){
+      const p = document.createElement("p"); p.className = "empty";
+      p.textContent = entries.length ? "No doses match these filters." : "No doses yet. Your first one will show up here.";
+      box.appendChild(p); return;
+    }
+    let lastDay = "", ul = null;
+    list.slice(0, 200).forEach(e => {
+      const day = fmtDay(e.t);
+      if(day !== lastDay){
+        const h = document.createElement("div"); h.className = "day"; h.textContent = day; box.appendChild(h);
+        ul = document.createElement("ul"); box.appendChild(ul); lastDay = day;
+      }
+      const li = document.createElement("li"); li.className = "entry";
+      const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(e.med);
+      const what = document.createElement("div"); what.className = "what";
+      const top = document.createElement("div"); top.textContent = e.med + (fmtDose(e) ? " " + fmtDose(e) : "");
+      const when = document.createElement("div"); when.className = "when"; when.textContent = fmtTime(e.t) + kindLabel(e);
+      what.append(top, when);
+      if(e.note){ const n = document.createElement("div"); n.className = "note"; n.textContent = e.note; what.appendChild(n); }
+      const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
+      del.setAttribute("aria-label", "Delete " + e.med + " at " + fmtTime(e.t));
+      del.addEventListener("click", () => {
+        if(!confirm(`Delete ${e.med} on ${day} at ${fmtTime(e.t)}?`)) return;
+        entries = entries.filter(x => x.id !== e.id); persist(); toast("Deleted."); renderAll();
+      });
+      li.append(dot, what, del); ul.appendChild(li);
+    });
+    if(list.length > 200){
+      const p = document.createElement("p"); p.className = "empty"; p.textContent = "Showing the latest 200. Narrow the filters or export for the full log.";
+      box.appendChild(p);
+    }
+  }
+
+  /* ================= Backup ================= */
+  function csvCell(v){ v = String(v ?? ""); return /[",\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; }
+  function toCSV(){
+    const rows = [["taken_at","medication","dose","unit","note"]];
+    [...entries].sort((a,b) => a.t - b.t).forEach(e => rows.push([localInput(new Date(e.t)), e.med, e.dose, e.unit, e.note]));
+    return rows.map(r => r.map(csvCell).join(",")).join("\n");
+  }
+  function parseCSV(text){
+    const rows = []; let row = [], cell = "", q = false;
+    for(let i = 0; i < text.length; i++){
+      const c = text[i];
+      if(q){ if(c === '"'){ if(text[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+      else if(c === '"') q = true;
+      else if(c === ","){ row.push(cell); cell = ""; }
+      else if(c === "\n" || c === "\r"){ if(c === "\r" && text[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+      else cell += c;
+    }
+    if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+    return rows.filter(r => r.some(x => x.trim() !== ""));
+  }
+  $("exportBtn").addEventListener("click", async () => {
+    if(!entries.length){ toast("Nothing to export yet."); return; }
+    const csv = toCSV();
+    const name = "med-log-" + localInput(new Date()).slice(0,10) + ".csv";
+    try {
+      const file = new File([csv], name, {type:"text/csv"});
+      if(navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"Med Log backup"}); return; }
+    } catch(e){ if(e && e.name === "AbortError") return; }
+    try {
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+      a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    } catch(e){}
+    const box = $("backupBox"); box.style.display = "block"; box.value = csv;
+    box.focus(); box.select();
+  });
+  $("importBtn").addEventListener("click", () => $("fileIn").click());
+  $("fileIn").addEventListener("change", async ev => {
+    const f = ev.target.files[0]; ev.target.value = ""; if(!f) return;
+    const rows = parseCSV(await f.text());
+    if(!rows.length || rows[0][0].trim().toLowerCase() !== "taken_at"){ toast("That file isn’t a Med Log export."); return; }
+    const have = new Set(entries.map(e => e.t + "|" + e.med.toLowerCase() + "|" + e.dose));
+    let added = 0;
+    rows.slice(1).forEach(r => {
+      const d = new Date(r[0]); if(isNaN(d) || !r[1]) return;
+      const dose = r[2] === "" || r[2] == null ? "" : Number(r[2]);
+      const e = { id: uid(), t: d.getTime(), med: r[1].trim(), dose, unit: (r[3] || "").trim(), note: (r[4] || "").trim(), kind: "manual" };
+      const k = e.t + "|" + e.med.toLowerCase() + "|" + e.dose;
+      if(!have.has(k)){ entries.push(e); have.add(k); added++; }
+    });
+    persist(); renderAll();
+    toast(added ? `Imported ${added} dose${added === 1 ? "" : "s"}.` : "No new doses in that file.");
+  });
+
+  /* ================= Collapsible sections & start-up ================= */
+  const cardState = ui.cards || {};
   document.querySelectorAll("details.card").forEach(d => {
-    if(ui[d.id] === false) d.open = false;
+    if(cardState[d.id] === false) d.open = false;
     d.addEventListener("toggle", () => {
-      ui[d.id] = d.open;
-      try { localStorage.setItem(UKEY, JSON.stringify(ui)); } catch(e){}
+      cardState[d.id] = d.open; ui.cards = cardState; persistUI();
       if(d.open && d.id === "chartCard") renderChart();
     });
   });
 
-  setInterval(renderUpNext, 30000);
-  document.addEventListener("visibilitychange", () => { if(!document.hidden) renderUpNext(); });
-  updatePreview();
-
-  function renderAll(){ renderQuick(); renderUpNext(); renderSchedList(); renderChart(); renderHistory(); }
+  function renderAll(){ renderQuick(); renderUpNext(); renderSchedList(); renderMedFilter(); renderLegend(); renderChart(); renderHistMedOptions(); renderHistory(); }
   $("when").value = localInput(new Date());
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderChart, 150); });
+  setInterval(() => { renderUpNext(); }, 30000);
+  document.addEventListener("visibilitychange", () => { if(!document.hidden){ renderUpNext(); renderSchedList(); } });
+  renderRanges();
+  resetForm();
   renderAll();
 })();
 </script>
