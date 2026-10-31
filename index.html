@@ -70,6 +70,32 @@ li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
 .tools button{flex:1}
 #backupBox{margin-top:10px;min-height:120px;font-size:.8rem;display:none}
+.next{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.next:first-child{border-top:0;padding-top:2px}
+.next .info{flex:1;min-width:0}
+.next .when{flex:none;width:86px}
+.next .big{font-size:1.25rem;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.next .rel{font-size:.82rem;color:var(--muted)}
+.next .rel.overdue{color:var(--danger);font-weight:700}
+.next .rel.done{color:var(--accent)}
+.sched .nx{color:var(--ink)}
+.next .name{font-weight:700}
+.next .status{font-size:.95rem}
+.next .meta{font-size:.85rem;color:var(--muted)}
+.status.overdue{color:var(--danger);font-weight:700}
+.status.done{color:var(--accent)}
+.logbtn{background:var(--accent);color:var(--accent-ink);font-weight:700;padding:8px 14px;min-height:44px;flex:none}
+.logbtn.quiet{background:transparent;color:var(--accent);border:1px solid var(--line);font-weight:400}
+details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;color:var(--accent);font-weight:700;min-height:36px;display:flex;align-items:center}
+h3{font-size:1rem;margin:14px 0 8px}
+.times{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.time{background:var(--band);border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:.92rem;font-variant-numeric:tabular-nums}
+.hint{font-size:.85rem;color:var(--muted);margin:0 0 12px}
+.sched{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.sched .info{flex:1;min-width:0}
+.sched .small{font-size:.85rem;color:var(--muted)}
+.edit{background:transparent;color:var(--accent);min-height:40px;padding:6px 10px;font-size:.9rem}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
   background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
@@ -80,6 +106,51 @@ li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
 <main>
   <h1>Med Log</h1>
   <p class="sub">Your doses, kept on this phone.</p>
+
+  <section aria-labelledby="nextH">
+    <h2 id="nextH">Up next</h2>
+    <div id="upNext" aria-live="polite"></div>
+    <details id="schedDetails">
+      <summary>Set up schedules</summary>
+      <div id="schedList"></div>
+      <h3 id="schedFormH">Add a schedule</h3>
+      <div class="full">
+        <label for="sMed">Medication</label>
+        <input id="sMed" list="medList" autocomplete="off" placeholder="e.g. Amoxicillin">
+      </div>
+      <div class="row">
+        <div>
+          <label for="sPer">Doses per day</label>
+          <input id="sPer" type="number" inputmode="numeric" min="1" max="12" step="1" value="2">
+        </div>
+        <div>
+          <label for="sFirst">First dose</label>
+          <input id="sFirst" type="time" value="08:00">
+        </div>
+      </div>
+      <div class="full" id="sLatestWrap">
+        <label for="sLatest">Last dose no later than</label>
+        <input id="sLatest" type="time" value="22:00">
+      </div>
+      <div class="row">
+        <div>
+          <label for="sDose">Dose</label>
+          <input id="sDose" type="number" inputmode="decimal" step="any" min="0" placeholder="500">
+        </div>
+        <div>
+          <label for="sUnit">Unit</label>
+          <input id="sUnit" list="unitList" autocomplete="off" value="mg">
+        </div>
+      </div>
+      <label>Dose times</label>
+      <div class="times" id="sPreview"></div>
+      <p class="hint" id="sGap"></p>
+      <div class="tools">
+        <button class="primary" id="sSave">Save schedule</button>
+        <button class="ghost" id="sCancel" hidden>Cancel</button>
+      </div>
+    </details>
+  </section>
 
   <section aria-labelledby="logH">
     <h2 id="logH">Log a dose</h2>
@@ -133,7 +204,7 @@ li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
 
   <section aria-labelledby="bkH">
     <h2 id="bkH">Backup</h2>
-    <p class="empty" style="margin-top:0">Your log lives only on this device. Export now and then so you don’t lose it.</p>
+    <p class="empty" style="margin-top:0">Your log lives only on this device. Export now and then so you don’t lose it. The CSV holds your doses; schedules stay on this device.</p>
     <div class="tools">
       <button class="ghost" id="exportBtn">Export CSV</button>
       <button class="ghost" id="importBtn">Import CSV</button>
@@ -308,10 +379,10 @@ li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
       const i = meds.findIndex(m => m.toLowerCase() === e.med.toLowerCase());
       const cy = top + i*laneH + laneH/2, cx = xs(e.t);
       const md = maxDose[e.med.toLowerCase()];
-      const r = md > 0 ? 5 + 8 * ((Number(e.dose)||0) / md) : 8;
+      const r = md > 0 ? 3 + 3 * ((Number(e.dose)||0) / md) : 4.5;
       const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": `${e.med} ${fmtDose(e)}, ${fmtDay(e.t)} ${fmtTime(e.t)}`, style:"cursor:pointer"});
-      g.appendChild(svgEl("circle", {cx, cy, r: Math.max(r, 16), fill:"transparent"}));
-      g.appendChild(svgEl("circle", {cx, cy, r, fill: colorFor(e.med), "fill-opacity":"0.8", stroke:"var(--surface)", "stroke-width":"1.5"}));
+      g.appendChild(svgEl("circle", {cx, cy, r: 11, fill:"transparent"}));
+      g.appendChild(svgEl("circle", {cx, cy, r, fill: colorFor(e.med), "fill-opacity":"0.9", stroke:"var(--surface)", "stroke-width":"1"}));
       const show = () => { $("detail").textContent = `${e.med}${fmtDose(e) ? " " + fmtDose(e) : ""}, taken ${fmtDay(e.t)} at ${fmtTime(e.t)}${e.note ? ". " + e.note : ""}`; };
       g.addEventListener("click", show);
       g.addEventListener("keydown", ev => { if(ev.key === "Enter" || ev.key === " "){ ev.preventDefault(); show(); }});
@@ -410,7 +481,180 @@ li.entry .note{color:var(--muted);font-size:.88rem;overflow-wrap:anywhere}
     toast(added ? `Imported ${added} dose${added === 1 ? "" : "s"}.` : "No new doses in that file.");
   });
 
-  function renderAll(){ renderQuick(); renderChart(); renderHistory(); }
+  /* ---------- Schedules ---------- */
+  const SKEY = "medlog.schedules.v1";
+  let schedules = (() => {
+    try { const r = localStorage.getItem(SKEY); const v = r ? JSON.parse(r) : []; return Array.isArray(v) ? v : []; }
+    catch(e){ return []; }
+  })();
+  let editingId = null;
+  function persistS(){
+    try { localStorage.setItem(SKEY, JSON.stringify(schedules)); }
+    catch(e){ toast("Couldn’t save the schedule on this device."); }
+  }
+  const sameMed = (a, b) => a.toLowerCase() === b.toLowerCase();
+  const toMin = s => { const p = String(s || "").split(":").map(Number); return p.length === 2 && !p.some(isNaN) ? p[0]*60 + p[1] : NaN; };
+
+  // Evenly spaced doses: 24 h ÷ doses, but squeezed so the last one lands by the "no later than" time.
+  function plan(per, first, latest){
+    per = Math.round(Number(per));
+    const f = toMin(first);
+    if(!(per >= 1 && per <= 12) || isNaN(f)) return null;
+    if(per === 1) return { times:[f], gap:0 };
+    const l = toMin(latest);
+    if(isNaN(l) || l <= f) return null;
+    const gap = Math.min(1440 / per, (l - f) / (per - 1));
+    const times = [];
+    for(let i = 0; i < per; i++) times.push(Math.min(Math.round((f + i*gap) / 5) * 5, i === per-1 ? l : 1439));
+    return { times, gap };
+  }
+  function atMin(dayOffset, min){ const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + dayOffset); d.setMinutes(min); return d.getTime(); }
+  function minLabel(min){ return fmtTime(atMin(0, min)); }
+  function dur(ms){
+    const m = Math.round(Math.abs(ms) / 60000);
+    if(m < 1) return "under a minute";
+    const h = Math.floor(m / 60), r = m % 60;
+    return [h ? h + " h" : "", r ? r + " min" : ""].filter(Boolean).join(" ");
+  }
+
+  function statusFor(s){
+    const p = plan(s.per, s.first, s.latest); if(!p) return null;
+    const t0 = atMin(0, 0), now = Date.now();
+    const taken = entries.filter(e => sameMed(e.med, s.med) && e.t >= t0 && e.t <= now).sort((a,b) => a.t - b.t);
+    const k = taken.length, n = p.times.length, last = taken[k-1];
+    if(k >= n) return { state:"done", k, n, last, nextT: atMin(1, p.times[0]) };
+    const nextT = atMin(0, p.times[k]);
+    return { state: nextT <= now ? "overdue" : "upcoming", k, n, last, nextT };
+  }
+
+  function renderUpNext(){
+    const box = $("upNext"); box.replaceChildren();
+    if(!schedules.length){
+      const p = document.createElement("p"); p.className = "empty";
+      p.textContent = "No schedules yet. Tap “Set up schedules” to add one.";
+      box.appendChild(p); return;
+    }
+    const rank = { overdue:0, upcoming:1, done:2 };
+    const now = Date.now();
+    schedules.map(s => ({ s, st: statusFor(s) })).filter(x => x.st)
+      .sort((a,b) => rank[a.st.state] - rank[b.st.state] || a.st.nextT - b.st.nextT)
+      .forEach(({ s, st }) => {
+        const row = document.createElement("div"); row.className = "next";
+        const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(s.med);
+        const info = document.createElement("div"); info.className = "info";
+        const name = document.createElement("div"); name.className = "name";
+        name.textContent = s.med + (fmtDose(s) ? " " + fmtDose(s) : "");
+        const when = document.createElement("div"); when.className = "when";
+        const big = document.createElement("div"); big.className = "big"; big.textContent = fmtTime(st.nextT);
+        const rel = document.createElement("div"); rel.className = "rel " + st.state;
+        rel.textContent = st.state === "overdue" ? `overdue ${dur(now - st.nextT)}`
+          : st.state === "upcoming" ? `in ${dur(st.nextT - now)}` : "tomorrow";
+        when.append(big, rel);
+        const meta = document.createElement("div"); meta.className = "meta";
+        meta.textContent = `${st.k} of ${st.n} taken today` + (st.last ? `, last at ${fmtTime(st.last.t)}` : "")
+          + (st.state === "done" ? ". All done today." : "");
+        name.prepend(dot, " ");
+        info.append(name, meta);
+        const btn = document.createElement("button");
+        btn.className = "logbtn" + (st.state === "done" ? " quiet" : "");
+        btn.textContent = "Log now";
+        btn.setAttribute("aria-label", "Log " + s.med + " now");
+        btn.addEventListener("click", () => {
+          if(st.state === "done" && !confirm(`You’ve already logged all ${st.n} doses of ${s.med} today. Log another?`)) return;
+          const existing = medNames().find(n => sameMed(n, s.med));
+          entries.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7),
+            med: existing || s.med, dose: s.dose, unit: s.unit, t: Date.now(), note: "" });
+          persist(); toast("Logged " + s.med + "."); renderAll();
+        });
+        row.append(when, info, btn); box.appendChild(row);
+      });
+  }
+
+  function renderSchedList(){
+    const box = $("schedList"); box.replaceChildren();
+    schedules.forEach(s => {
+      const p = plan(s.per, s.first, s.latest);
+      const row = document.createElement("div"); row.className = "sched";
+      const dot = document.createElement("span"); dot.className = "dot"; dot.style.background = colorFor(s.med);
+      const info = document.createElement("div"); info.className = "info";
+      const t = document.createElement("div"); t.textContent = `${s.med}${fmtDose(s) ? " " + fmtDose(s) : ""}, ${s.per}× a day`;
+      const small = document.createElement("div"); small.className = "small";
+      small.textContent = p ? p.times.map(minLabel).join(", ") : "Check the times";
+      const st = statusFor(s);
+      const nx = document.createElement("div"); nx.className = "small nx";
+      if(st) nx.textContent = "Next dose: " + (st.state === "done" ? "tomorrow " : "") + fmtTime(st.nextT)
+        + (st.state === "overdue" ? " (overdue)" : "");
+      info.append(t, small, nx);
+      const edit = document.createElement("button"); edit.className = "edit"; edit.textContent = "Edit";
+      edit.addEventListener("click", () => startEdit(s));
+      const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
+      del.addEventListener("click", () => {
+        if(!confirm(`Delete the schedule for ${s.med}? Your logged doses stay.`)) return;
+        schedules = schedules.filter(x => x.id !== s.id); persistS();
+        if(editingId === s.id) resetForm();
+        toast("Schedule deleted."); renderAll();
+      });
+      row.append(dot, info, edit, del); box.appendChild(row);
+    });
+  }
+
+  function updatePreview(){
+    const per = Math.round(Number($("sPer").value));
+    $("sLatestWrap").style.display = per > 1 ? "" : "none";
+    const box = $("sPreview"); box.replaceChildren();
+    const p = plan(per, $("sFirst").value, $("sLatest").value);
+    if(!p){
+      $("sGap").textContent = !(per >= 1 && per <= 12) ? "Doses per day must be 1 to 12."
+        : "The last dose time needs to be later than the first dose.";
+      return;
+    }
+    p.times.forEach(m => { const s = document.createElement("span"); s.className = "time"; s.textContent = minLabel(m); box.appendChild(s); });
+    $("sGap").textContent = per === 1 ? "Once a day." : `About every ${dur(p.gap * 60000)}.`;
+  }
+  ["sPer","sFirst","sLatest"].forEach(id => $(id).addEventListener("input", updatePreview));
+  $("sMed").addEventListener("change", () => {
+    const last = lastFor($("sMed").value.trim());
+    if(last && $("sDose").value === ""){ $("sDose").value = last.dose ?? ""; $("sUnit").value = last.unit || ""; }
+  });
+
+  function startEdit(s){
+    editingId = s.id;
+    $("sMed").value = s.med; $("sPer").value = s.per; $("sFirst").value = s.first;
+    $("sLatest").value = s.latest || "22:00"; $("sDose").value = s.dose ?? ""; $("sUnit").value = s.unit || "";
+    $("schedFormH").textContent = "Edit " + s.med; $("sCancel").hidden = false;
+    $("schedDetails").open = true; updatePreview();
+    $("schedFormH").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  function resetForm(){
+    editingId = null;
+    $("sMed").value = ""; $("sPer").value = 2; $("sFirst").value = "08:00"; $("sLatest").value = "22:00";
+    $("sDose").value = ""; $("sUnit").value = "mg";
+    $("schedFormH").textContent = "Add a schedule"; $("sCancel").hidden = true; updatePreview();
+  }
+  $("sCancel").addEventListener("click", resetForm);
+  $("sSave").addEventListener("click", () => {
+    const medIn = $("sMed").value.trim();
+    if(!medIn){ toast("Enter a medication name."); $("sMed").focus(); return; }
+    const per = Math.round(Number($("sPer").value));
+    if(!plan(per, $("sFirst").value, $("sLatest").value)){ toast("Check doses per day and the times."); return; }
+    const doseRaw = $("sDose").value.trim();
+    const dose = doseRaw === "" ? "" : Number(doseRaw);
+    if(doseRaw !== "" && !(dose >= 0)){ toast("Dose must be a number."); return; }
+    const med = medNames().find(n => sameMed(n, medIn)) || medIn;
+    const rec = { med, per, first: $("sFirst").value, latest: $("sLatest").value, dose, unit: $("sUnit").value.trim() };
+    const clash = schedules.find(x => sameMed(x.med, med) && x.id !== editingId);
+    if(clash && !confirm(`${med} already has a schedule. Replace it?`)) return;
+    schedules = schedules.filter(x => x !== clash);
+    if(editingId){ schedules = schedules.map(x => x.id === editingId ? { ...x, ...rec } : x); }
+    else { schedules.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,7), ...rec }); }
+    persistS(); toast("Schedule saved for " + med + "."); resetForm(); renderAll();
+  });
+
+  setInterval(renderUpNext, 30000);
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) renderUpNext(); });
+  updatePreview();
+
+  function renderAll(){ renderQuick(); renderUpNext(); renderSchedList(); renderChart(); renderHistory(); }
   $("when").value = localInput(new Date());
   let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(renderChart, 150); });
   renderAll();
