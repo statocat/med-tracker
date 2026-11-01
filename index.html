@@ -534,9 +534,13 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     entries.forEach(e => { if(sameMed(e.med, name) && (!best || e.t > best.t)) best = e; });
     return best;
   }
-  function medsWhere(pred){
+  // Schedules are never retroactive: each version applies from the moment it was saved (from) until it
+  // was changed, replaced or deleted (until). Older versions keep describing the past.
+  const isCurrent = s => !s.until || s.until > Date.now();
+  const inEffect = (s, t) => (!s.from || t >= s.from) && (!s.until || t < s.until);
+  function medsWhere(pred, includePast){
     const seen = new Map();
-    schedules.filter(pred).forEach(s => { const k = s.med.toLowerCase(); if(!seen.has(k)) seen.set(k, s.med); });
+    schedules.filter(s => (includePast || isCurrent(s)) && pred(s)).forEach(s => { const k = s.med.toLowerCase(); if(!seen.has(k)) seen.set(k, s.med); });
     return [...seen.values()];
   }
   function usedIn24(med, usual){
@@ -570,11 +574,12 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     for(let i = 0; i < per; i++) times.push(Math.min(Math.round((f + i*gap) / 5) * 5, i === per-1 ? l : 1439));
     return { times, gap };
   }
-  const timedScheds = med => schedules.filter(s => !isPrn(s) && sameMed(s.med, med));
+  const timedScheds = med => schedules.filter(s => !isPrn(s) && sameMed(s.med, med) && isCurrent(s));
+  const allTimed = med => schedules.filter(s => !isPrn(s) && sameMed(s.med, med));
   function slotsOn(med, dayTs){
-    return timedScheds(med).filter(s => activeOn(s, dayTs)).flatMap(s => {
+    return allTimed(med).filter(s => activeOn(s, dayTs)).flatMap(s => {
       const p = plan(s.per, s.first, s.latest);
-      return p ? p.times.map(m => ({ m, t: atDayMin(dayTs, m), dose: s.dose, unit: s.unit, sid: s.id, kind:"sched" })) : [];
+      return p ? p.times.map(m => ({ m, t: atDayMin(dayTs, m), dose: s.dose, unit: s.unit, sid: s.id, kind:"sched" })).filter(x => inEffect(s, x.t)) : [];
     }).sort((a,b) => a.t - b.t);
   }
   function nextDaySlot(med, dayTs){
@@ -640,10 +645,11 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   /* ================= As-needed (PRN) schedules =================
      Each PRN schedule has one block per time range (dose, number of doses, hours between doses, first
      dose). Planned times are a guide; as-needed doses are never overdue or missed. */
-  const prnScheds = med => schedules.filter(s => isPrn(s) && sameMed(s.med, med));
+  const prnScheds = med => schedules.filter(s => isPrn(s) && sameMed(s.med, med) && isCurrent(s));
+  const allPrn = med => schedules.filter(s => isPrn(s) && sameMed(s.med, med));
   function blocksOnDay(med, dayTs){
     const out = [];
-    prnScheds(med).filter(s => activeOn(s, dayTs)).forEach(s => (s.blocks || []).forEach(b => {
+    allPrn(med).filter(s => activeOn(s, dayTs)).forEach(s => (s.blocks || []).forEach(b => {
       const r = b.rangeId ? rangeById(b.rangeId) : null;
       const win = r ? [atDayMin(dayTs, toMin(r.start)), atDayMin(dayTs, toMin(r.start) + rangeSpan(r))] : [dayTs, addDaysTs(dayTs, 1)];
       out.push({ s, b, r, win, dayTs });
@@ -660,7 +666,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   // The block whose rules apply at a moment (the strictest if several do).
   function ruleAt(med, ts){
     const d0 = dayStartTs(ts);
-    const here = [...blocksOnDay(med, d0), ...blocksOnDay(med, addDaysTs(d0, -1))].filter(x => ts >= x.win[0] && ts < x.win[1]);
+    const here = [...blocksOnDay(med, d0), ...blocksOnDay(med, addDaysTs(d0, -1))].filter(x => ts >= x.win[0] && ts < x.win[1] && inEffect(x.s, ts));
     const pool = here.length ? here : prnScheds(med).flatMap(s => (s.blocks || []).map(b => ({ s, b, r: b.rangeId ? rangeById(b.rangeId) : null })));
     if(!pool.length) return null;
     return pool.reduce((a, x) => strictness(x.b) > strictness(a.b) ? x : a);
@@ -691,7 +697,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     for(let i = -1; i <= 8; i++){
       const dTs = addDaysTs(today, i);
       blocksOnDay(med, dTs).forEach(inst => blockOffsets(inst.b).forEach(m => {
-        const t = atDayMin(dTs, m); if(t >= from && (!best || t < best.t)) best = { t, inst };
+        const t = atDayMin(dTs, m); if(t >= from && inEffect(inst.s, t) && (!best || t < best.t)) best = { t, inst };
       }));
     }
     const ru = (ready ? ruleAt(med, now) : (best ? best.inst : ruleAt(med, allowT))) || ruleAt(med, now);
@@ -870,7 +876,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
 
   function renderUpNext(){
     const box = $("upNext"); box.replaceChildren();
-    if(!schedules.length){
+    if(!schedules.some(isCurrent)){
       const p = document.createElement("p"); p.className = "empty";
       p.textContent = "No schedules yet. Add one in Schedules.";
       box.appendChild(p); return;
@@ -976,7 +982,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     const box = $("schedList"); box.replaceChildren();
     const q = $("sSearch").value.trim().toLowerCase();
     const meds = medsWhere(() => true).filter(m => !q || m.toLowerCase().includes(q)).sort((a,b) => a.localeCompare(b));
-    if(!schedules.length){ const p = document.createElement("p"); p.className = "empty"; p.textContent = "No schedules yet. Add one below."; box.appendChild(p); return; }
+    if(!schedules.some(isCurrent)){ const p = document.createElement("p"); p.className = "empty"; p.textContent = "No schedules yet. Add one below."; box.appendChild(p); return; }
     if(!meds.length){ const p = document.createElement("p"); p.className = "empty"; p.textContent = "No matches."; box.appendChild(p); return; }
     meds.forEach(med => {
       const head = document.createElement("div"); head.className = "shead";
@@ -993,20 +999,21 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       nx.textContent = parts.join(". ");
       head.append(dot, nm, nx); box.appendChild(head);
 
-      schedules.filter(s => sameMed(s.med, med)).sort((a,b) => isPrn(a) - isPrn(b)).forEach(s => {
+      schedules.filter(s => sameMed(s.med, med) && isCurrent(s)).sort((a,b) => isPrn(a) - isPrn(b)).forEach(s => {
         const d = describe(s);
         const row = document.createElement("div"); row.className = "sched";
         const info = document.createElement("div"); info.className = "info";
         const t = document.createElement("div"); t.textContent = d.title; info.appendChild(t);
         d.lines.forEach(l => { const x = document.createElement("div"); x.className = "small"; x.textContent = l; info.appendChild(x); });
+        if(s.from){ const x = document.createElement("div"); x.className = "small"; x.textContent = `${s.from > Date.now() ? "Starts" : "In effect since"} ${fmtDay(s.from)}, ${fmtTime(s.from)}`; info.appendChild(x); }
         const edit = document.createElement("button"); edit.className = "edit"; edit.textContent = "Edit";
         edit.addEventListener("click", () => startEdit(s));
         const del = document.createElement("button"); del.className = "del"; del.textContent = "Delete";
         del.addEventListener("click", () => {
-          if(!confirm(`Delete this ${med} schedule (${d.title})? Your logged doses stay.`)) return;
-          schedules = schedules.filter(x => x.id !== s.id); persistS();
+          if(!confirm(`Stop this ${med} schedule (${d.title}) from now on? Past days keep their history, and your logged doses stay.`)) return;
+          endSchedule(s); persistS();
           if(editingId === s.id) resetForm();
-          toast("Schedule deleted."); renderAll();
+          toast("Schedule stopped. Past days are unchanged."); renderAll();
         });
         row.append(info, edit, del); box.appendChild(row);
       });
@@ -1047,7 +1054,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
       };
       [name, st, en].forEach(i => i.addEventListener("change", commit));
       del.addEventListener("click", () => {
-        const users = schedules.filter(s => isPrn(s) && (s.blocks || []).some(b => b.rangeId === r.id));
+        const users = schedules.filter(s => isPrn(s) && isCurrent(s) && (s.blocks || []).some(b => b.rangeId === r.id));
         if(users.length){ toast(`${r.name} is used by ${[...new Set(users.map(s => s.med))].join(", ")}. Change those schedules first.`); return; }
         if(ranges.length <= 1){ toast("Keep at least one time range."); return; }
         if(!confirm(`Delete the ${r.name} time range?`)) return;
@@ -1257,7 +1264,13 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     }
     return msgs;
   }
-  const othersFor = (med, exceptId) => schedules.filter(s => sameMed(s.med, med) && s.id !== exceptId);
+  const othersFor = (med, exceptId) => schedules.filter(s => sameMed(s.med, med) && s.id !== exceptId && isCurrent(s));
+  // Ends a schedule now; one that never took effect is simply removed.
+  function endSchedule(s, at){
+    at = at || Date.now();
+    if(s.from && s.from >= at) schedules = schedules.filter(x => x !== s);
+    else s.until = at;
+  }
 
   function updatePreview(){
     const prn = formMode === "prn";
@@ -1400,9 +1413,13 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     const warn = limitWarnings(rec, others).join(" ");
     if(warn && !confirm(warn + " Save anyway?")) return;
 
-    if(replace) schedules = schedules.filter(s => !sameMed(s.med, rec.med));
-    if(editingId) schedules = schedules.map(x => x.id === editingId ? { id: x.id, ...rec } : x);
-    else schedules.push({ id: uid(), ...rec });
+    // Changes apply from now on: the old version keeps the past, the new version starts now.
+    const now = Date.now();
+    if(replace) othersFor(rec.med).forEach(s => endSchedule(s, now));
+    if(editingId){
+      const old = schedById(editingId);
+      if(old){ endSchedule(old, now); schedules.push({ id: uid(), series: old.series || old.id, ...rec, from: now }); }
+    } else schedules.push({ id: uid(), ...rec, from: now });
     medSettings[rec.med.toLowerCase()] = { ...(medSettings[rec.med.toLowerCase()] || {}), max: Number(maxRaw) || 0, maxPer: Number(mpRaw) || 0, minGapH: Number(mgRaw) || 0 };
     persistS(); persistM();
     toast((replace ? "Replaced: " : "Saved: ") + rec.med + "."); resetForm(); renderAll();
@@ -1489,14 +1506,14 @@ fieldset.period legend{font-weight:700;padding:0 6px}
   function plannedMarks(x0, x1, now){
     const out = [];
     for(let d = dayStartTs(x0); d <= x1; d = addDaysTs(d, 1)){
-      medsWhere(s => !isPrn(s)).forEach(med => applyAdjustments(med, slotsOn(med, d)).forEach(s => { if(!s.skipped && s.t >= x0 && s.t <= x1) out.push({ med, t: s.t, dose: s.dose, unit: s.unit, kind:"sched", shifted: s.shifted, orig: s.orig }); }));
+      medsWhere(s => !isPrn(s), true).forEach(med => applyAdjustments(med, slotsOn(med, d)).forEach(s => { if(!s.skipped && s.t >= x0 && s.t <= x1) out.push({ med, t: s.t, dose: s.dose, unit: s.unit, kind:"sched", shifted: s.shifted, orig: s.orig }); }));
     }
     medsWhere(isPrn).forEach(med => {
       const p = prnFor(med); if(!p) return;
       const from = Math.max(now, p.allowT, x0);
       for(let d = addDaysTs(dayStartTs(from), -1); d <= x1; d = addDaysTs(d, 1)){
         blocksOnDay(med, d).forEach(inst => blockOffsets(inst.b).forEach(m => {
-          const t = atDayMin(d, m); if(t >= from && t <= x1) out.push({ med, t, dose: inst.b.dose, unit: inst.s.unit, kind:"prn", range: inst.r });
+          const t = atDayMin(d, m); if(t >= from && t <= x1 && inEffect(inst.s, t)) out.push({ med, t, dose: inst.b.dose, unit: inst.s.unit, kind:"prn", range: inst.r });
         }));
       }
     });
