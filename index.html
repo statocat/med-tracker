@@ -327,7 +327,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     <div class="chips" id="logMeds" role="group" aria-label="Medications to show"></div>
     <div id="chartWrap"><svg id="chart" role="img" aria-label="Dose Log: scatter plot of doses by medication over time, shaded by time range"></svg></div>
     <div class="legend" id="marks" aria-hidden="true">
-      <span><b class="mk fill"></b>Taken</span><span><b class="mk ring"></b>Scheduled</span><span><b class="mk dash"></b>Upcoming as needed (optional)</span>
+      <span><b class="mk fill"></b>Taken</span><span><b class="mk ring"></b>Scheduled</span><span><b class="mk dash"></b>As-needed plan (optional)</span>
     </div>
     <div class="legend" id="legend" aria-hidden="true"></div>
     <p id="detail" aria-live="polite"></p>
@@ -1499,7 +1499,7 @@ fieldset.period legend{font-weight:700;padding:0 6px}
         return [today, endOf(today)];
       }
       case "all": return null;
-      default: return [now - Number(range) * 864e5, now + 36e5 * 0.5];
+      default: return [now - Number(range) * 864e5, Math.max(now + 36e5 * 0.5, addDaysTs(today, 1) - 60000)]; // through the end of today, so upcoming doses show
     }
   }
   // Timed schedule times and upcoming as-needed planned times inside a window.
@@ -1508,12 +1508,15 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     for(let d = dayStartTs(x0); d <= x1; d = addDaysTs(d, 1)){
       medsWhere(s => !isPrn(s), true).forEach(med => applyAdjustments(med, slotsOn(med, d)).forEach(s => { if(!s.skipped && s.t >= x0 && s.t <= x1) out.push({ med, t: s.t, dose: s.dose, unit: s.unit, kind:"sched", shifted: s.shifted, orig: s.orig }); }));
     }
-    medsWhere(isPrn).forEach(med => {
-      const p = prnFor(med); if(!p) return;
-      const from = Math.max(now, p.allowT, x0);
-      for(let d = addDaysTs(dayStartTs(from), -1); d <= x1; d = addDaysTs(d, 1)){
+    // As-needed planned times: past ones as a guide, upcoming ones from when the next dose is allowed.
+    medsWhere(isPrn, true).forEach(med => {
+      const p = prnFor(med), allowT = p ? p.allowT : Infinity;
+      for(let d = addDaysTs(dayStartTs(x0), -1); d <= x1; d = addDaysTs(d, 1)){
         blocksOnDay(med, d).forEach(inst => blockOffsets(inst.b).forEach(m => {
-          const t = atDayMin(d, m); if(t >= from && t <= x1 && inEffect(inst.s, t)) out.push({ med, t, dose: inst.b.dose, unit: inst.s.unit, kind:"prn", range: inst.r });
+          const t = atDayMin(d, m);
+          if(t < x0 || t > x1 || !inEffect(inst.s, t)) return;
+          if(t >= now && t < allowT) return; // not allowed yet
+          out.push({ med, t, dose: inst.b.dose, unit: inst.s.unit, kind:"prn", range: inst.r, past: t < now });
         }));
       }
     });
@@ -1626,12 +1629,12 @@ fieldset.period legend{font-weight:700;padding:0 6px}
     marks.slice().sort((a,b) => a.t - b.t).forEach(mk => {
       const i = meds.findIndex(m => sameMed(m, mk.med)); if(i < 0) return;
       const cy = top + i * laneH + laneH / 2, cx = xs(mk.t), r = sizeOf(mk) + 1;
-      const label = mk.kind === "prn" ? "Upcoming as needed (optional)" : mk.shifted ? `Scheduled (shifted from ${fmtTime(mk.orig)})` : "Scheduled";
+      const label = mk.kind === "prn" ? (mk.past ? "Planned as needed (optional)" : "Upcoming as needed (optional)") : mk.shifted ? `Scheduled (shifted from ${fmtTime(mk.orig)})` : "Scheduled";
       const desc = `${label}: ${mk.med}${fmtDose(mk) ? " " + fmtDose(mk) : ""}, ${fmtDay(mk.t)} at ${fmtTime(mk.t)}${mk.range ? " (" + mk.range.name.toLowerCase() + ")" : ""}`;
       const g = svgEl("g", {tabindex:"0", role:"button", "aria-label": desc, style:"cursor:pointer"});
       g.appendChild(svgEl("circle", {cx, cy, r: 11, fill:"transparent"}));
       const ring = { cx, cy, r, fill:"none", stroke: colorFor(mk.med), "stroke-width": 1.6 };
-      if(mk.kind === "prn"){ ring["stroke-dasharray"] = "2 2"; ring["stroke-opacity"] = "0.85"; }
+      if(mk.kind === "prn"){ ring["stroke-dasharray"] = "2 2"; ring["stroke-opacity"] = mk.past ? "0.5" : "0.9"; }
       g.appendChild(svgEl("circle", ring));
       const show = () => { $("detail").textContent = desc; };
       g.addEventListener("click", show);
